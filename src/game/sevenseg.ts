@@ -24,6 +24,15 @@ export const SEGMENTS: Record<string, number[]> = {
   " ": [0, 0, 0, 0, 0, 0, 0],
 };
 
+// upside-down calculator spelling: read the string back to front
+const FLIP: Record<string, string> = {
+  "0": "O", "1": "I", "2": "S", "3": "E", "4": "h",
+  "5": "S", "6": "g", "7": "L", "8": "B", "9": "G",
+};
+export function calcWord(digits: string): string {
+  return [...digits].reverse().map((c) => FLIP[c] ?? "").join("");
+}
+
 // geometry for each segment in bit order [a,b,c,d,e,f,g] (digit cell ~20x36)
 export const SEG_PATHS = [
   "M2 2 h14",   // a  top

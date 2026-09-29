@@ -3,6 +3,7 @@ import type { CSSProperties, RefObject } from "react";
 import { useMeta, useActions, elapsed } from "../game/state";
 import { fmtTime, clearedTraps, score } from "../game/logic";
 import { SKILLS } from "../game/content";
+import { levelContent } from "../game/levels";
 import { recordRun, loadRuns } from "../game/runs";
 import { Check } from "@phosphor-icons/react";
 
@@ -15,10 +16,13 @@ export default function Finale() {
   const [stage, setStage] = useState<Stage>(state.prizeResult ? "blessing" : "wait");
 
   // the typed values live ONLY here, never dispatched, persisted or logged
-  const [esewaId, setEsewaId] = useState("");
-  const [esewaPw, setEsewaPw] = useState("");
+  const [uid, setUid] = useState("");
+  const [pw, setPw] = useState("");
   const [err, setErr] = useState(false);
   const [runs, setRuns] = useState(() => loadRuns());
+
+  const lv = levelContent(state.level);
+  const prank = lv.prank;
 
   useEffect(() => {
     const t1 = setTimeout(() => {
@@ -35,6 +39,7 @@ export default function Finale() {
     dispatch({ type: "prize", result });
     const kept = recordRun({
       id: state.startTs,
+      level: state.level,
       team: state.team,
       timeMs: elapsed(state),
       hintsUsed: state.hintsUsed,
@@ -47,9 +52,9 @@ export default function Finale() {
   };
 
   const submit = () => {
-    setEsewaId("");
-    setEsewaPw("");
-    if (!esewaId.trim() || !esewaPw.trim()) {
+    setUid("");
+    setPw("");
+    if (!uid.trim() || !pw.trim()) {
       setErr(true);
       return;
     }
@@ -62,7 +67,9 @@ export default function Finale() {
     finishRun("passed");
   };
 
-  const usedSkills = Object.keys(SKILLS).filter((k) => state.skills[k]);
+  const usedSkills = Object.keys(SKILLS)
+    .filter((k) => state.skills[k])
+    .map((k) => (k === "scamRefuse" ? prank.skillLabel : SKILLS[k as keyof typeof SKILLS]));
   const traps = clearedTraps(state);
   const timeMs = elapsed(state);
   const total = score(timeMs, state.hintsUsed, state.wrongPasswords);
@@ -91,7 +98,7 @@ export default function Finale() {
     },
     {
       name: "Never Fooled",
-      desc: "Say no to the eSewa prize.",
+      desc: prank.challengeDesc,
       done: state.prizeResult === "passed",
       progress: "",
     },
@@ -102,92 +109,81 @@ export default function Finale() {
       <div className="finale-card">
         {stage !== "blessing" ? (
           <>
-            <svg viewBox="0 40 400 200" width="220" style={{ overflow: "visible", flex: "none", marginTop: 34 }}>
-              <BoxSvg lidRef={lidRef} />
+            <svg viewBox="0 -60 400 290" width="220" style={{ overflow: "visible", flex: "none" }}>
+              <BoxSvg lidRef={lidRef} open={false} />
             </svg>
-            <h1>You found Hajurama's box!</h1>
+            <h1>{lv.finaleHeading}</h1>
           </>
         ) : null}
 
         {stage === "offer" && (
-          <div className="prize-card" data-stage="offer">
-            <div className="esewa-mark">eSewa</div>
+          <div className="prize-card" data-stage="offer" style={{ "--prank": prank.accent } as CSSProperties}>
+            <div className="esewa-mark" style={{ color: prank.accent }}>{prank.wordmark}</div>
             <h2>Congratulations!</h2>
             <p>
-              Hajurama has left you Rs 1,00,000 inside the box.<br />
-              Log in to eSewa to receive the money in your wallet.
+              {prank.pitch1}<br />
+              {prank.pitch2}
             </p>
-            <label>eSewa ID (mobile number or email)</label>
+            <label>{prank.idLabel}</label>
             <input
               type="text"
-              value={esewaId}
-              onChange={(e) => setEsewaId(e.target.value)}
+              value={uid}
+              onChange={(e) => setUid(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
               autoComplete="off"
               spellCheck={false}
               autoCapitalize="off"
               data-lpignore="true"
-              aria-label="eSewa ID"
+              aria-label={prank.idLabel}
             />
-            <label>Password</label>
+            <label>{prank.pwLabel}</label>
             <input
               type="text"
-              value={esewaPw}
-              onChange={(e) => setEsewaPw(e.target.value)}
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
               autoComplete="off"
               spellCheck={false}
               autoCapitalize="off"
               data-lpignore="true"
-              aria-label="eSewa password"
+              aria-label={`${prank.wordmark} password`}
               style={{ WebkitTextSecurity: "disc" } as CSSProperties}
             />
-            {err && <div className="pw-err" style={{ marginTop: 6 }}>Enter your eSewa ID and password</div>}
-            <button className="prize-btn" onClick={submit}>Receive Rs 1,00,000</button>
+            {err && <div className="pw-err" style={{ marginTop: 6 }}>{prank.error}</div>}
+            <button className="prize-btn" onClick={submit}>{prank.button}</button>
             <button className="not-now" onClick={pass}>Not now</button>
           </div>
         )}
 
         {stage === "fell" && (
           <div className="prize-card fell" data-stage="fell">
-            <h2>Hajurama is very disappointed.</h2>
-            <p>
-              After everything you learned at the Tea Shop? You just gave your eSewa ID and
-              password to a stranger for money that was never there. A real scammer would
-              empty your wallet in two minutes.
-            </p>
-            <p>Relax, this was only a test. The game threw away everything you typed.</p>
-            <p><b>Nobody gives free money for your ID, password, PIN or OTP. Keep them secret, always.</b></p>
-            <button className="prize-btn" onClick={() => setStage("blessing")}>Sorry, Hajurama</button>
+            <h2>{prank.fellHeading}</h2>
+            {prank.fellLines.map((l, i) => <p key={i}>{l}</p>)}
+            <p><b>{prank.fellBold}</b></p>
+            <button className="prize-btn" onClick={() => setStage("blessing")}>{prank.fellButton}</button>
           </div>
         )}
 
         {stage === "passed" && (
           <div className="prize-card" data-stage="passed">
-            <h2>Shabash! You passed the real test.</h2>
-            <p>
-              There was never any Rs 1 lakh. Anyone who asks for your eSewa ID and
-              password is a scammer, even if they say they are Hajurama.
-            </p>
-            <button className="prize-btn" onClick={() => setStage("blessing")}>Open my real gift</button>
+            <h2>{prank.passHeading}</h2>
+            <p>{prank.passLine}</p>
+            <button className="prize-btn" onClick={() => setStage("blessing")}>{prank.passButton}</button>
           </div>
         )}
 
         {stage === "blessing" && (
           <div className="finale-cols">
             <div className="finale-left">
-              <svg viewBox="0 40 400 200" width="200" style={{ overflow: "visible", flex: "none" }}>
-                <BoxSvg lidRef={lidRef} />
+              <svg viewBox="0 -60 400 290" width="200" style={{ overflow: "visible", flex: "none" }}>
+                <BoxSvg lidRef={lidRef} open />
               </svg>
-              <h1>You found Hajurama's box!</h1>
-              <p className="sub">Tell your teacher your time, right now!</p>
+              <h1>{lv.finaleHeading}</h1>
+              <p className="sub">Tell your teacher your score, right now!</p>
               <div className="blessing">
-                <p>My clever grandchild,</p>
-                <p>
-                  Here is my Dashain blessing for you: tika, jamara, and a long, happy life.
-                  May you always be curious, and may you never stop learning.
-                </p>
-                <p style={{ fontStyle: "italic", color: "#6B3E1E" }}>With love, Hajurama</p>
+                <p>{lv.finaleLetter[0]}</p>
+                <p>{lv.finaleLetter[1]}</p>
+                <p style={{ fontStyle: "italic", color: "#6B3E1E" }}>{lv.signoff}</p>
               </div>
             </div>
             <div className="finale-right">
@@ -208,7 +204,8 @@ export default function Finale() {
                   <div className={"challenge" + (c.done ? " done" : "")} data-challenge={c.name} key={c.name}>
                     <span className="mark">{c.done ? <Check size={12} weight="bold" /> : ""}</span>
                     <span className="cname">{c.name}</span>
-                    <span className="cdesc">{c.desc}{!c.done && c.progress ? ` ${c.progress}` : ""}</span>
+                    <span className="cdesc">{c.desc}</span>
+                    {!c.done && c.progress ? <span className="prog-pill">{c.progress}</span> : null}
                   </div>
                 ))}
               </div>
@@ -216,26 +213,38 @@ export default function Finale() {
                 <div className="runs-card">
                   <h4>Past runs on this computer</h4>
                   <table className="runs-table">
+                    <thead>
+                      <tr><th>Team</th><th>Level</th><th>Score</th><th>Challenges</th></tr>
+                    </thead>
                     <tbody>
-                      {runs.slice(-5).reverse().map((r) => (
-                        <tr key={r.id} className={r.id === state.startTs ? "current" : ""}>
-                          <td className="t">{r.team || "(no name)"}</td>
-                          <td className="mono">{fmtTime(score(r.timeMs, r.hintsUsed, r.wrongPasswords))}</td>
-                          <td className="marks">
-                            <span className={r.trapsCleared.length === 4 ? "on" : ""}>T</span>
-                            <span className={r.hintsUsed === 0 && r.wrongPasswords === 0 ? "on" : ""}>P</span>
-                            <span className={r.prize === "passed" ? "on" : ""}>N</span>
-                          </td>
-                        </tr>
-                      ))}
+                      {runs.slice(-5).reverse().map((r) => {
+                        const names = [
+                          r.trapsCleared.length === 4 && "Trap Master",
+                          r.hintsUsed === 0 && r.wrongPasswords === 0 && "Perfect Run",
+                          r.prize === "passed" && "Never Fooled",
+                        ].filter(Boolean) as string[];
+                        return (
+                          <tr key={r.id} className={r.id === state.startTs ? "current" : ""}>
+                            <td className="t">
+                              {r.team || "(no name)"}
+                              {r.id === state.startTs && <span className="this-run"> (this run)</span>}
+                            </td>
+                            <td>{r.level ?? 1}</td>
+                            <td className="mono">{fmtTime(score(r.timeMs, r.hintsUsed, r.wrongPasswords))}</td>
+                            <td title={names.length ? names.join(", ") : "none yet"}>
+                              {names.length} of 3
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               )}
               <div className="skills-wrap">
                 <ul className="skills-list">
-                  {usedSkills.map((k) => (
-                    <li key={k}><Check size={12} weight="bold" />{SKILLS[k as keyof typeof SKILLS]}</li>
+                  {usedSkills.map((label, i) => (
+                    <li key={i}><Check size={12} weight="bold" />{label}</li>
                   ))}
                 </ul>
               </div>
@@ -244,6 +253,12 @@ export default function Finale() {
                   Try a challenge
                   <span className="arrow">→</span>
                 </button>
+                {state.level === 1 && (
+                  <button className="btn-pill" onClick={() => dispatch({ type: "start-level", level: 2 })}>
+                    Play Level 2
+                    <span className="arrow">→</span>
+                  </button>
+                )}
                 <button
                   className="btn-ghost"
                   onClick={() => {
@@ -263,7 +278,7 @@ export default function Finale() {
   );
 }
 
-function BoxSvg({ lidRef }: { lidRef: RefObject<SVGGElement | null> }) {
+function BoxSvg({ lidRef, open }: { lidRef: RefObject<SVGGElement | null>; open: boolean }) {
   return (
     <g stroke="#5F3C1C" strokeWidth="3" strokeLinejoin="round">
       <path d="M60 110 h280 v110 a8 8 0 0 1 -8 8 H68 a8 8 0 0 1 -8 -8 z" fill="#B0763E" />
@@ -275,6 +290,7 @@ function BoxSvg({ lidRef }: { lidRef: RefObject<SVGGElement | null> }) {
           transformOrigin: "60px 110px",
           transition: "transform 1200ms cubic-bezier(0.2,0.8,0.2,1)",
           transformBox: "view-box",
+          transform: open ? "rotate(-30deg)" : undefined,
         }}
       >
         <path d="M52 66 q0 -14 14 -14 h268 q14 0 14 14 v44 H52 z" fill="#C9884F" />

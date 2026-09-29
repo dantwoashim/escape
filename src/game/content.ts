@@ -83,18 +83,24 @@ export function rng(seed: number) {
   };
 }
 
-const randint = (r: () => number, lo: number, hi: number) =>
+export const randint = (r: () => number, lo: number, hi: number) =>
   lo + Math.floor(r() * (hi - lo + 1));
 
+// expected may list alternatives as "a|b"; a spaced answer like
+// "HIMALAYAN MONAL" also accepts the squashed form "himalayanmonal"
 export function checkPassword(input: string, expected: string): boolean {
-  return input.trim().toLowerCase() === expected.trim().toLowerCase();
+  const v = input.trim().toLowerCase();
+  return expected.split("|").some((e) => {
+    const t = e.trim().toLowerCase();
+    return v === t || (t.includes(" ") && v.replace(/\s+/g, "") === t.replace(/\s+/g, ""));
+  });
 }
 
 const B = "Hajurama's Box";
 
 // ---------------------------------------------------------------- doc builder
 
-class DocBuilder {
+export class DocBuilder {
   blocks: DocBlock[] = [];
   private para(text: string, r: Partial<Run> = {}, align?: Align) {
     this.blocks.push({
@@ -126,8 +132,8 @@ class DocBuilder {
   pageBreak() {
     this.blocks.push({ type: "para", runs: [{ text: " ", size: 16 }], pageBreakBefore: true });
   }
-  sign() {
-    this.para("- Hajurama", { size: 18, italic: true, color: COLORS.brown, font: "serif" });
+  sign(name = "Hajurama") {
+    this.para(`- ${name}`, { size: 18, italic: true, color: COLORS.brown, font: "serif" });
   }
   done(): DocBlock[] {
     return this.blocks;
@@ -147,7 +153,7 @@ export const FINAL_WORD = "DASHAIN";
 export const PEN_PRICE = 5;
 export const MAGIC_LEAF = 17;
 export const MAGIC_TIME = "2026-09-27T18:45:00";
-const BASE = "2026-09-15T10:00:00";
+export const BASE = "2026-09-15T10:00:00";
 
 // START HERE
 {
@@ -457,7 +463,7 @@ export const DESIGN_CLUE_LINES = [
 
 // ---------------------------------------------------------------- filesystem
 
-const f = (
+export const f = (
   id: string,
   name: string,
   kind: NodeKind,
@@ -465,7 +471,7 @@ const f = (
   extra: Partial<FSNode> = {},
 ): FSNode => ({ id, name, kind, location, modified: BASE, ...extra });
 
-const doc = (id: string, name: string, location: string, extra: Partial<FSNode> = {}) =>
+export const doc = (id: string, name: string, location: string, extra: Partial<FSNode> = {}) =>
   f(id, name, "doc", location, { app: "word", docId: id, size: 2048 + id.length * 37, ...extra });
 
 export const boxRoot: FSNode = f("box-root", B, "folder", "Desktop", {

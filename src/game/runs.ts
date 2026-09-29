@@ -1,6 +1,7 @@
 // Past runs on this computer, kept in their own key so game resets never wipe them.
 export interface Run {
   id: number; // startTs of the run
+  level?: 1 | 2; // missing = Level 1
   team: string;
   timeMs: number;
   hintsUsed: number;

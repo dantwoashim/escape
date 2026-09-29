@@ -10,9 +10,10 @@ import {
 } from "react";
 import type { ReactNode, Dispatch } from "react";
 import {
-  desktopNodes, recycleBinNode, FSNode, findNode, docs, DocBlock,
-  MILESTONES, HINTS, TRAP_HINT, Milestone, SkillKey, checkPassword, DESIGN_CLUE_LINES,
+  recycleBinNode, FSNode, findNode, docs, DocBlock,
+  MILESTONES, Milestone, SkillKey, checkPassword, DESIGN_CLUE_LINES,
 } from "./content";
+import { levelContent } from "./levels";
 import { nextMilestone, pathIsTrap, idsTo, restoreNode } from "./logic";
 
 export const SAVE_KEY = "hajurama-box-save-v2";
@@ -43,6 +44,7 @@ export interface DesignEl {
 }
 
 export interface Persisted {
+  level: 1 | 2;
   team: string;
   started: boolean;
   finished: boolean;
@@ -86,8 +88,9 @@ export function defaultDesign(): DesignEl[] {
   ];
 }
 
-function freshPersisted(team = ""): Persisted {
+function freshPersisted(team = "", level: 1 | 2 = 1): Persisted {
   return {
+    level,
     team,
     started: false,
     finished: false,
@@ -104,7 +107,7 @@ function freshPersisted(team = ""): Persisted {
     wrongPasswords: 0,
     trapsVisited: [],
     unlocked: [],
-    fsRoots: desktopNodes,
+    fsRoots: levelContent(level).desktopNodes,
     docEdits: {},
     design: defaultDesign(),
     revealFlags: {},
@@ -136,6 +139,7 @@ export function load(): State {
     return {
       ...initial,
       ...p,
+      level: p.level ?? 1, // saves from before levels existed
       phase: p.started ? "game" : "landing",
       windows: [],
       zTop: 1,
@@ -153,12 +157,12 @@ export function load(): State {
 
 export function persisted(s: State): Persisted {
   const {
-    team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintsUsed, hintLevels,
+    level, team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintsUsed, hintLevels,
     milestones, skills, wrongPasswords, trapsVisited, unlocked, fsRoots,
     docEdits, design, revealFlags,
   } = s;
   return {
-    team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintsUsed, hintLevels,
+    level, team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintsUsed, hintLevels,
     milestones, skills, wrongPasswords, trapsVisited, unlocked, fsRoots,
     docEdits, design, revealFlags,
   };
@@ -173,7 +177,8 @@ export function elapsed(state: Pick<State, "finishedMs" | "accumMs" | "started" 
 // ---------------------------------------------------------------- actions
 
 export type Action =
-  | { type: "start"; team: string }
+  | { type: "start"; team: string; level?: 1 | 2 }
+  | { type: "start-level"; level: 1 | 2 }
   | { type: "coach"; step: number }
   | { type: "open-node"; nodeId: string }
   | { type: "open-app"; app: AppKind; title: string; nodeId?: string; path?: string[] }
@@ -288,13 +293,29 @@ function nodeOpenEffects(state: State, node: FSNode): State {
 
 export function reducer(state: State, a: Action): State {
   switch (a.type) {
-    case "start":
+    case "start": {
+      // switching levels means a fresh run on that level's tree
+      const base = a.level && a.level !== state.level
+        ? { ...freshPersisted(a.team || state.team, a.level), phase: state.phase, windows: state.windows, zTop: state.zTop, activeWin: state.activeWin, hintMessage: state.hintMessage, toast: state.toast, finale: state.finale, teacher: state.teacher }
+        : state;
       return {
-        ...state, phase: "game", started: true,
-        team: a.team || state.team,
-        startTs: state.started ? state.startTs : Date.now(),
-        finale: state.finished ? state.finale : false,
+        ...base, phase: "game", started: true,
+        team: a.team || base.team,
+        startTs: base.started ? base.startTs : Date.now(),
+        finale: base.finished ? base.finale : false,
       };
+    }
+    case "start-level": {
+      // "Play Level 2" from the finale: same team, straight to the desktop
+      return {
+        ...freshPersisted(state.team, a.level),
+        phase: "game",
+        started: true,
+        coachStep: 3,
+        windows: [], zTop: 1, activeWin: null,
+        hintMessage: null, toast: null, finale: false, teacher: state.teacher,
+      };
+    }
     case "coach":
       return { ...state, coachStep: a.step };
     case "open-node": {
@@ -404,12 +425,13 @@ export function reducer(state: State, a: Action): State {
       let ids: string[] = [];
       if (w?.path.length) ids = w.path;
       else if (w?.nodeId) ids = idsTo(w.nodeId, state.fsRoots.find((r) => r.id === "box-root") ?? state.fsRoots[0]);
+      const lv = levelContent(state.level);
       if (ids.length && pathIsTrap(ids)) {
         return {
           ...state,
           tokens: state.tokens - 1,
           hintsUsed: state.hintsUsed + 1,
-          hintMessage: { text: TRAP_HINT, step: "Hint" },
+          hintMessage: { text: lv.trapHint, step: "Hint" },
         };
       }
       const m = nextMilestone(state.milestones);
@@ -422,7 +444,7 @@ export function reducer(state: State, a: Action): State {
         };
       }
       const level = (state.hintLevels[m] ?? 0) + 1;
-      const text = HINTS[m][Math.min(level, 2) - 1];
+      const text = lv.hints[m][Math.min(level, 2) - 1];
       return {
         ...state,
         tokens: state.tokens - 1,
@@ -483,7 +505,7 @@ export function reducer(state: State, a: Action): State {
     case "replay": {
       // same team, fresh run straight to the desktop
       return {
-        ...freshPersisted(state.team),
+        ...freshPersisted(state.team, state.level),
         phase: "game",
         started: true,
         coachStep: 3,
@@ -575,7 +597,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return rest;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    state.team, state.started, state.finished, state.finishedMs, state.prizeResult, state.coachStep,
+    state.level, state.team, state.started, state.finished, state.finishedMs, state.prizeResult, state.coachStep,
     state.startTs, state.accumMs, state.tokens, state.hintsUsed, state.hintLevels, state.milestones,
     state.skills, state.wrongPasswords, state.trapsVisited, state.unlocked,
     state.fsRoots, state.docEdits, state.design, state.revealFlags, state.phase,

@@ -2,29 +2,9 @@
 import { useState } from "react";
 import { useMeta, useActions } from "../game/state";
 import { MILESTONES } from "../game/state";
-import { caesar, FIRST_CLUE, FINAL_WORD, TEMPLE_END } from "../game/content";
 import { nextMilestone, fmtTime, score } from "../game/logic";
 import { loadRuns, clearRuns } from "../game/runs";
-
-const ANSWERS: [string, string][] = [
-  ["START HERE", `Ctrl+A shows: ${caesar(FIRST_CLUE, 3)} → key 3 → ${FIRST_CLUE} → Chautari`],
-  ["Chautari", "Details view, sort Date modified, newest is leaf 17"],
-  ["leaf 17", "MOMO=10, CHIYA=4, ROTI=2 → ROTI + MOMO x CHIYA = 42"],
-  ["FORK", "password 42. B lies (both-truth impossible), follow Shepherd A"],
-  ["Design", "move/send-to-back the basket → pen = Rs 5; last page is in Recycle Bin"],
-  ["Recycle Bin", "right-click last page → Restore"],
-  ["last page", "Google: Everest 1953 → FINAL CODE"],
-  ["FINAL CODE", `password 1953 → ${caesar(FINAL_WORD, 5)}, key = pen price 5 → ${FINAL_WORD}`],
-  ["BOX", `password ${FINAL_WORD}, then finish`],
-];
-
-const TRAPS: [string, string][] = [
-  ["Tea Shop", "PIN/OTP fields or page 2 reveal the scam lesson"],
-  ["Water Tap", "clue is 1pt: zoom or font up; 0.7734 → HELLO opens note"],
-  ["Temple", `Ctrl+H replace @ with nothing → Google flower → RHODODENDRON → key 3 → "${TEMPLE_END}"`],
-  ["Shepherd B", "right-click → Properties → Details → 'how many months have 28 days?' → 12 opens liar"],
-  ["Final prize", "fake eSewa login after BOX opens. Right move: Not now. Typing an ID and password counts as falling for it."],
-];
+import { levelContent } from "../game/levels";
 
 const STEP_LABELS: Record<string, string> = {
   openedStart: "Open START HERE",
@@ -45,6 +25,7 @@ export default function TeacherPanel() {
   const next = nextMilestone(state.milestones);
   const current = next ? STEP_LABELS[next] ?? next : "Done, they found the box";
   const [runs, setRuns] = useState(() => loadRuns());
+  const lv = levelContent(state.level);
   return (
     <div className="teacher" data-teacher>
       <span className="tag">Teacher only</span>
@@ -56,7 +37,7 @@ export default function TeacherPanel() {
       <h4 style={{ margin: "10px 0 2px" }}>Correct path</h4>
       <table>
         <tbody>
-          {ANSWERS.map(([k, v]) => (
+          {lv.teacherAnswers.map(([k, v]) => (
             <tr key={k}><td>{k}</td><td>{v}</td></tr>
           ))}
         </tbody>
@@ -64,14 +45,16 @@ export default function TeacherPanel() {
       <h4 style={{ margin: "6px 0 2px" }}>Traps</h4>
       <table>
         <tbody>
-          {TRAPS.map(([k, v]) => (
+          {lv.teacherTraps.map(([k, v]) => (
             <tr key={k}><td>{k}</td><td>{v}</td></tr>
           ))}
         </tbody>
       </table>
       <h4 style={{ margin: "6px 0 2px" }}>Passwords</h4>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
-        FORK→42 · FINAL CODE→1953 · BOX→DASHAIN · note→HELLO · blessing→RHODODENDRON · liar→12
+        {state.level === 2
+          ? "FORK→38 · FINAL CODE→2008 · RADIO→TIHAR · note→BEES · blessing→DANPHE · liar→2"
+          : "FORK→42 · FINAL CODE→1953 · BOX→DASHAIN · note→HELLO · blessing→RHODODENDRON · liar→12"}
       </div>
       <h4 style={{ margin: "8px 0 2px" }}>Milestones</h4>
       <div style={{ fontSize: 11.5, color: "var(--ink-2)" }}>

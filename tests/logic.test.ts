@@ -9,6 +9,13 @@ import {
 } from "../src/game/logic";
 import { loadRuns, recordRun, clearRuns } from "../src/game/runs";
 import { reducer, elapsed, initialState, load, persisted, SAVE_KEY, State } from "../src/game/state";
+import {
+  desktopNodes2, boxRoot2, ticketDate, MAGIC_TICKET,
+  FIRST_CLUE2, FINAL_WORD2, FLAGS_TEXT, FLAGS_MESSAGE, GUMBA_END, TRAP_HINT2,
+} from "../src/game/content2";
+import { LEVELS, levelContent } from "../src/game/levels";
+import { calcWord } from "../src/game/sevenseg";
+import { MILESTONES } from "../src/game/content";
 
 const store = new Map<string, string>();
 (globalThis as Record<string, unknown>).localStorage = {
@@ -294,6 +301,78 @@ describe("seven-segment display map", () => {
       expect(s.length, ch).toBe(7);
       for (const v of s) expect(v === 0 || v === 1).toBe(true);
     }
+  });
+});
+
+describe("level 2 content", () => {
+  it("caesar round trips", () => {
+    expect(caesar(caesar(FIRST_CLUE2, 3), -3)).toBe(FIRST_CLUE2);
+    expect(caesar(FINAL_WORD2, 4)).toBe("XMLEV");
+    expect(caesar("XMLEV", -4)).toBe("TIHAR");
+    expect(caesar(caesar(GUMBA_END, 3), -3)).toBe(GUMBA_END);
+  });
+  it("food maths gives 38", () => {
+    const sel = 5, lassi = 7, dahi = 3;
+    expect(sel * 3).toBe(15);
+    expect(sel + lassi * 2).toBe(19);
+    expect(lassi - dahi).toBe(4);
+    expect(dahi + sel * lassi).toBe(38);
+    expect((dahi + sel) * lassi).toBe(56); // the trap answer
+  });
+  it("ticket 23 is strictly newest", () => {
+    const park = findNode("chautari", desktopNodes2)!;
+    const tickets = park.children!.filter((c) => c.id.startsWith("leaf-"));
+    const times = tickets.map((t) => new Date(t.modified).getTime());
+    expect(Math.max(...times)).toBe(new Date(ticketDate(MAGIC_TICKET)).getTime());
+    expect(times.filter((t) => t === Math.max(...times)).length).toBe(1);
+    const sorted = sortNodes(tickets, "modified", false);
+    expect(sorted[0].name).toBe("ticket 23");
+  });
+  it("5338 upside down reads BEES, 0.7734 reads hELLO", () => {
+    expect(calcWord("5338")).toBe("BEES");
+    expect(calcWord("0.7734")).toBe("hELLO");
+  });
+  it("blessing accepts the danphe name variants", () => {
+    const b = findNode("blessing", desktopNodes2)!;
+    expect(checkPassword("danphe", b.password!)).toBe(true);
+    expect(checkPassword("MONAL", b.password!)).toBe(true);
+    expect(checkPassword("himalayan monal", b.password!)).toBe(true);
+    expect(checkPassword("HIMALAYANMONAL", b.password!)).toBe(true);
+    expect(checkPassword("impeyan", b.password!)).toBe(false);
+  });
+  it("shyam's liar opens with 2", () => {
+    const l = findNode("liar", desktopNodes2)!;
+    expect(checkPassword("2", l.password!)).toBe(true);
+    expect(checkPassword("1", l.password!)).toBe(false);
+  });
+  it("flags replace-all restores the message", () => {
+    const { text, count } = replaceAllCount(FLAGS_TEXT, "#");
+    expect(text).toBe(FLAGS_MESSAGE);
+    expect(count).toBeGreaterThan(0);
+  });
+  it("both levels cover every milestone with hints", () => {
+    for (const lv of LEVELS) {
+      for (const m of MILESTONES) expect(lv.hints[m], `${lv.id} ${m}`).toBeDefined();
+    }
+    expect(Object.keys(LEVELS[0].hints)).toEqual(Object.keys(LEVELS[1].hints));
+  });
+  it("level content keeps the same structural ids", () => {
+    for (const id of ["box-root", "start-here", "box", "chautari", "fork", "shepherd-a", "shepherd-b", "final-code", "last-page"]) {
+      expect(findNode(id, desktopNodes2), id).toBeDefined();
+    }
+    expect(findNode("leaf-23", desktopNodes2)!.name).toBe("ticket 23");
+    expect(boxRoot2.name).toBe("Hajurba's Radio");
+  });
+  it("old save without level loads as 1", () => {
+    store.clear();
+    store.set(SAVE_KEY, JSON.stringify({ started: true, team: "T", fsRoots: desktopNodes }));
+    expect(load().level).toBe(1);
+  });
+  it("clearedTraps works the same per level", () => {
+    const s = { revealFlags: { scam: true }, unlocked: ["note"] };
+    expect(clearedTraps(s)).toEqual(["tea-shop", "water-tap"]);
+    expect(levelContent(2).trapHint).toBe(TRAP_HINT2);
+    expect(levelContent(2).trapRoots).toEqual(levelContent(1).trapRoots);
   });
 });
 

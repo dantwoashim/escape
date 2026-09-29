@@ -1,9 +1,14 @@
-// Shepherd B illustration: hills, shepherd with crook, painted text.
+// trap-brother illustration: hills, figure with crook, painted text
+import { useMeta } from "../game/state";
+import { levelContent } from "../game/levels";
+
 export default function ImageViewer() {
+  const state = useMeta();
+  const [line1, line2] = levelContent(state.level).imageLines;
   return (
     <div className="imageview">
       <div className="frame">
-        <svg viewBox="0 0 900 600" width="680" role="img" aria-label="Shepherd B">
+        <svg viewBox="0 0 900 600" width="680" role="img" aria-label={line1.replace(/\.$/, "")}>
           <defs>
             <linearGradient id="sb-sky" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#BFDCE8" />
@@ -44,10 +49,10 @@ export default function ImageViewer() {
             <rect x="20" y="20" width="8" height="26" />
           </g>
           <text x="450" y="52" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="700" fontSize="38" fill="#28140A">
-            I am Shepherd B.
+            {line1}
           </text>
           <text x="450" y="98" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="700" fontSize="34" fill="#28140A">
-            I ALWAYS tell the truth!
+            {line2}
           </text>
           <rect x="220" y="540" width="460" height="42" rx="21" fill="#28140A" opacity="0.75" />
           <text x="450" y="568" textAnchor="middle" fontFamily="Georgia, serif" fontSize="22" fill="#FBF8F3">

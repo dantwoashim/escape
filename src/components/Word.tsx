@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMeta, useActions, Win, docs, checkPassword } from "../game/state";
+import { useMeta, useActions, Win, checkPassword } from "../game/state";
+import { levelContent } from "../game/levels";
 import { DocBlock, ParaBlock, Run, findNode } from "../game/content";
 import { replaceAllCount } from "../game/logic";
 import {
@@ -26,9 +27,10 @@ export default function Word({ win }: Props) {
   const { dispatch } = useActions();
   const node = findNode(win.nodeId ?? "", state.fsRoots);
   const docId = node?.docId ?? win.nodeId ?? "";
-  const baseBlocks = state.docEdits[docId] ?? docs[docId]?.blocks ?? [];
+  const ldocs = levelContent(state.level).docs;
+  const baseBlocks = state.docEdits[docId] ?? ldocs[docId]?.blocks ?? [];
   const [blocks, setBlocks] = useState<DocBlock[]>(baseBlocks);
-  useEffect(() => setBlocks(state.docEdits[docId] ?? docs[docId]?.blocks ?? []), [docId, state.docEdits]);
+  useEffect(() => setBlocks(state.docEdits[docId] ?? ldocs[docId]?.blocks ?? []), [docId, state.docEdits]);
 
   const locked = !!node?.password && !state.unlocked.includes(node.id);
   const [zoom, setZoom] = useState(100);

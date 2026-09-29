@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useMeta, useActions, DesignEl, defaultDesign } from "../game/state";
-import { DESIGN_CLUE_LINES } from "../game/content";
+import { levelContent } from "../game/levels";
 import { clueRevealed } from "../game/logic";
 import {
   Stack, TrashSimple, ArrowCounterClockwise, TextT, Shapes,
@@ -34,6 +34,32 @@ function Doko() {
         <path d="M180 40 L160 204" /><path d="M230 44 L180 196" />
       </g>
       <ellipse cx="150" cy="204" rx="62" ry="12" fill="#7C5026" />
+    </svg>
+  );
+}
+
+function Topi() {
+  // Dhaka topi, flat-topped cap with woven pattern
+  return (
+    <svg viewBox="0 0 300 220" width="100%" height="100%" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="tk" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#4A3B5C" />
+          <stop offset="1" stopColor="#2E2238" />
+        </linearGradient>
+      </defs>
+      <path d="M40 190 L40 110 Q40 55 150 55 Q260 55 260 110 L260 190 Z" fill="url(#tk)" stroke="#1E1626" strokeWidth="3" />
+      <ellipse cx="150" cy="190" rx="110" ry="16" fill="#1E1626" />
+      <g opacity="0.85">
+        <path d="M55 100 l20 -20 20 20 -20 20 z" fill="#C9485B" />
+        <path d="M115 100 l20 -20 20 20 -20 20 z" fill="#E5B45C" />
+        <path d="M175 100 l20 -20 20 20 -20 20 z" fill="#C9485B" />
+        <path d="M85 150 l20 -20 20 20 -20 20 z" fill="#E5B45C" />
+        <path d="M145 150 l20 -20 20 20 -20 20 z" fill="#7FA368" />
+        <path d="M205 150 l20 -20 20 20 -20 20 z" fill="#C9485B" />
+      </g>
+      <path d="M40 168 Q150 188 260 168 L260 190 L40 190 Z" fill="#3A2C49" />
+      <path d="M40 110 Q150 130 260 110" fill="none" stroke="#1E1626" strokeWidth="2.5" opacity="0.6" />
     </svg>
   );
 }
@@ -121,18 +147,19 @@ export default function Designer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sel, els]);
 
+  const lv = levelContent(state.level);
   const elContent = (el: DesignEl) => {
     if (el.type === "title")
-      return <div className="title-text">Hajurama's Picture</div>;
+      return <div className="title-text">{lv.designTitle}</div>;
     if (el.type === "clue")
       return (
         <div className="clue-text">
-          {DESIGN_CLUE_LINES.map((l, i) => (
+          {lv.designClue.map((l, i) => (
             <div key={i} style={i === 0 ? { fontWeight: 700, marginBottom: 4 } : undefined}>{l}</div>
           ))}
         </div>
       );
-    return <Doko />;
+    return lv.designShape === "topi" ? <Topi /> : <Doko />;
   };
 
   return (

@@ -446,9 +446,12 @@ mark.hit { background: rgba(168,80,46,.3); color: var(--ink); border-radius: 2px
 }
 .finale .blessing p { margin: 0 0 8px; }
 .finale .blessing p:last-child { margin-bottom: 0; }
-.stats-grid { display: flex; justify-content: center; gap: 30px; margin: 8px 0; flex-wrap: wrap; }
-.stat .v { font-family: var(--font-mono); font-size: 22px; font-weight: 600; }
-.stat .k { font-size: 10.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.08em; }
+.stats-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+  margin: 8px 0; width: 100%; text-align: center;
+}
+.stat .v { font-family: var(--font-mono); font-size: clamp(16px, 1.5vw, 22px); font-weight: 600; }
+.stat .k { font-size: 10px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.06em; }
 .skills-wrap { max-height: 30vh; overflow-y: auto; width: 100%; margin: 4px 0 14px; }
 .skills-list {
   text-align: left; margin: 0 auto; max-width: 480px; font-size: 12.5px; line-height: 1.7;
@@ -483,13 +486,13 @@ mark.hit { background: rgba(168,80,46,.3); color: var(--ink); border-radius: 2px
   border: 1px solid var(--line-2); border-radius: var(--radius-ctl);
   background: var(--surface); outline: none; color: var(--ink);
 }
-.prize-card input:focus { border-color: #60BB46; }
+.prize-card input:focus { border-color: var(--prank, #60BB46); }
 .prize-btn {
   width: 100%; margin-top: 14px; padding: 10px 0; border: none; border-radius: 999px;
-  background: #60BB46; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
-  transition: transform 120ms var(--ease), background 120ms var(--ease);
+  background: var(--prank, #60BB46); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: transform 120ms var(--ease), filter 120ms var(--ease);
 }
-.prize-btn:hover { background: #4FA338; }
+.prize-btn:hover { filter: brightness(0.92); }
 .prize-btn:active { transform: scale(0.98); }
 .not-now {
   margin-top: 8px; background: none; border: none; font-size: 12px;
@@ -510,22 +513,29 @@ mark.hit { background: rgba(168,80,46,.3); color: var(--ink); border-radius: 2px
   gap: 8px; margin-top: 6px;
 }
 @media (min-width: 1200px) {
+  .finale-card { max-width: 1240px; }
   .finale-cols {
-    flex-direction: row; align-items: flex-start; justify-content: center;
-    gap: 48px; width: 100%;
+    flex-direction: row; align-items: center; justify-content: center;
+    gap: clamp(48px, 6vw, 110px); width: 100%;
   }
-  .finale-left { width: 380px; flex: none; }
-  .finale-right { width: 480px; flex: none; align-items: stretch; text-align: left; margin-top: 0; }
+  .finale-left { width: clamp(380px, 32vw, 520px); flex: none; }
+  .finale-left .blessing p { font-size: clamp(15px, 1.15vw, 18px); }
+  .finale-right { width: clamp(480px, 34vw, 560px); flex: none; align-items: stretch; text-align: left; margin-top: 0; }
+  .finale h1 { font-size: clamp(26px, 3vw, 40px); }
 }
-.score-block { text-align: center; }
-.score-v { font-family: var(--font-mono); font-size: 34px; font-weight: 700; line-height: 1.05; }
+.score-block { text-align: left; }
+.score-v { font-family: var(--font-mono); font-size: clamp(30px, 2.6vw, 44px); font-weight: 700; line-height: 1.05; }
 .score-k { font-size: 10.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.1em; }
-.score-x { font-size: 11.5px; color: var(--ink-2); margin-top: 2px; }
+.score-x { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
 .challenges {
   width: 100%; background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius-ctl); padding: 8px 12px; display: flex; flex-direction: column; gap: 6px;
 }
-.challenge { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; }
+.challenge { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.challenge .prog-pill {
+  margin-left: auto; flex: none; font-family: var(--font-mono); font-size: 10.5px;
+  padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2);
+}
 .challenge .mark {
   width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--line-2);
   display: inline-flex; align-items: center; justify-content: center; flex: none;
@@ -540,22 +550,33 @@ mark.hit { background: rgba(168,80,46,.3); color: var(--ink); border-radius: 2px
 }
 .runs-card h4 { margin: 0 0 4px; font-size: 12px; }
 .runs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.runs-table th {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--ink-2); text-align: left; padding: 0 6px 3px 0; font-weight: 600;
+}
 .runs-table td { padding: 3px 6px 3px 0; }
 .runs-table .t { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .runs-table .mono { font-family: var(--font-mono); }
 .runs-table tr.current .t { font-weight: 700; }
-.runs-table tr.current .t::after { content: " (this run)"; font-weight: 400; color: var(--ink-2); }
-.runs-table .marks span {
-  display: inline-block; width: 15px; height: 15px; line-height: 15px; text-align: center;
-  font-size: 9.5px; font-weight: 700; border-radius: 3px; margin-right: 3px;
-  border: 1px solid var(--line-2); color: var(--ink-2); opacity: 0.45;
-}
-.runs-table .marks span.on { background: var(--success); border-color: var(--success); color: #fff; opacity: 1; }
-.finale-btns { display: flex; gap: 10px; align-items: center; justify-content: center; }
+.runs-table .this-run { font-weight: 400; color: var(--ink-2); font-size: 10.5px; }
+.finale-btns { display: flex; gap: 10px; align-items: center; justify-content: flex-start; }
+.finale-btns .btn-pill, .finale-btns .btn-ghost { height: 42px; display: inline-flex; align-items: center; }
 .trap-chip {
   display: inline-flex; align-items: center; cursor: default;
   font-family: var(--font-mono); font-size: 12px;
 }
+
+/* landing level picker */
+.level-pick { display: flex; gap: 10px; margin: 14px 0 18px; }
+.level-card {
+  text-align: left; border: 1.5px solid var(--line-2); border-radius: var(--radius-ctl);
+  background: var(--surface); padding: 10px 14px; cursor: pointer; min-width: 200px;
+  transition: border-color 120ms var(--ease), background 120ms var(--ease);
+  color: var(--ink); font-family: inherit;
+}
+.level-card b { display: block; font-size: 13.5px; }
+.level-card span { font-size: 11.5px; color: var(--ink-2); }
+.level-card.on { border-color: var(--accent); background: #FFF6EE; }
 
 /* ---------- teacher panel ---------- */
 .teacher {

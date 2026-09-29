@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useMeta, useActions } from "../game/state";
 import { ArrowRight } from "@phosphor-icons/react";
+import { LEVELS } from "../game/levels";
+import { loadRuns } from "../game/runs";
 
 function BoxArt() {
   return (
@@ -51,6 +53,10 @@ export default function Landing() {
   const state = useMeta();
   const { dispatch } = useActions();
   const [team, setTeam] = useState(state.team || "");
+  // preselect Level 2 once a Level 1 run exists on this computer
+  const [level, setLevel] = useState<1 | 2>(() =>
+    loadRuns().some((r) => (r.level ?? 1) === 1) ? 2 : 1,
+  );
   const hasSave = state.started && !state.finished;
 
   return (
@@ -73,8 +79,24 @@ export default function Landing() {
               onKeyDown={(e) => e.key === "Enter" && dispatch({ type: "start", team })}
             />
           </div>
+          <div className="level-pick" role="radiogroup" aria-label="Choose a level">
+            {LEVELS.map((lv) => (
+              <button
+                key={lv.id}
+                type="button"
+                role="radio"
+                aria-checked={level === lv.id}
+                data-level={lv.id}
+                className={"level-card" + (level === lv.id ? " on" : "")}
+                onClick={() => setLevel(lv.id)}
+              >
+                <b>{lv.cardTitle}</b>
+                <span>{lv.cardDesc}</span>
+              </button>
+            ))}
+          </div>
           <div>
-            <button className="btn-pill" onClick={() => dispatch({ type: "start", team })}>
+            <button className="btn-pill" onClick={() => dispatch({ type: "start", team, level })}>
               Start the hunt
               <span className="arrow"><ArrowRight size={15} weight="bold" /></span>
             </button>

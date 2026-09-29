@@ -41,6 +41,15 @@ test("docs screenshots: explorer details + finale after full playthrough", async
   await page.keyboard.press("Control+a");
   await closeTopWin(page);
 
+  // visit one trap first so the finale shows mixed challenge states
+  await dbl(page, "tea-shop");
+  await dbl(page, "prize");
+  await page.fill('.field-row input[aria-label="PIN"]', "1234");
+  await page.waitForTimeout(1400);
+  await expect(page.locator(".window .word").last()).toContainText("phone scams work");
+  await closeTopWin(page);
+  await page.locator('.exp-toolbar .nav-btn[aria-label="Up"]').first().click();
+
   await dbl(page, "chautari");
   await page.locator('.view-switch button[title="Details"]').click();
   await page.locator('th[data-col="modified"]').click();
