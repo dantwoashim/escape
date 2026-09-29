@@ -458,6 +458,50 @@ mark.hit { background: rgba(168,80,46,.3); color: var(--ink); border-radius: 2px
 .skills-list li { display: flex; align-items: baseline; gap: 7px; }
 .skills-list svg { color: var(--success); flex: none; transform: translateY(1.5px); }
 
+/* ---------- final prize prank ---------- */
+.prize-card {
+  width: min(400px, 92vw); margin: 6px auto 0; text-align: center;
+  background: #FFFDF8; border: 1px solid var(--line); border-radius: var(--radius-win);
+  box-shadow: var(--shadow-lg); padding: 18px 24px 16px;
+  animation: prizein 420ms var(--ease);
+}
+@keyframes prizein {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.prize-card .esewa-mark {
+  font-weight: 800; font-size: 22px; color: #60BB46; letter-spacing: -0.02em;
+}
+.prize-card h2 { font-family: var(--font-serif); font-size: 20px; margin: 6px 0 8px; }
+.prize-card p { font-size: 13px; color: var(--ink-2); line-height: 1.55; margin: 0 0 10px; }
+.prize-card label {
+  display: block; text-align: left; font-size: 11.5px; font-weight: 600;
+  color: var(--ink-2); margin: 8px 0 4px;
+}
+.prize-card input {
+  width: 100%; padding: 8px 10px; font-size: 13.5px;
+  border: 1px solid var(--line-2); border-radius: var(--radius-ctl);
+  background: var(--surface); outline: none; color: var(--ink);
+}
+.prize-card input:focus { border-color: #60BB46; }
+.prize-btn {
+  width: 100%; margin-top: 14px; padding: 10px 0; border: none; border-radius: 999px;
+  background: #60BB46; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: transform 120ms var(--ease), background 120ms var(--ease);
+}
+.prize-btn:hover { background: #4FA338; }
+.prize-btn:active { transform: scale(0.98); }
+.not-now {
+  margin-top: 8px; background: none; border: none; font-size: 12px;
+  color: var(--ink-2); cursor: pointer; text-decoration: underline;
+  text-underline-offset: 3px; opacity: 0.75;
+}
+.not-now:hover { opacity: 1; }
+.prize-card.fell { border-color: rgba(163, 58, 44, 0.35); }
+.prize-card.fell h2 { color: var(--error); }
+.prize-card.fell .prize-btn { background: var(--ink); }
+.prize-card.fell .prize-btn:hover { background: var(--accent); }
+
 /* ---------- teacher panel ---------- */
 .teacher {
   position: fixed; right: 14px; top: 14px; z-index: 1800; width: 380px; max-height: 80vh; overflow: auto;

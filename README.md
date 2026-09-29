@@ -26,13 +26,13 @@ Hajurama hid her old wooden box somewhere in the village before Dashain. She lef
 - Searching on Google
 - Using the Calculator
 - Reading a secret code (a Caesar cipher)
-- Spotting a phone scam that asks for a PIN or OTP
+- Spotting scams that ask for a PIN, OTP or eSewa password
 
 ![Sorting files by date in File Explorer](docs/explorer.png)
 
 ## How the game works
 
-The village has one right path and four wrong ones. Each wrong path looks promising for a few steps, so careful reading pays off. Every wrong path still teaches a skill before it sends the team back.
+The village has one right path and four wrong ones. Each wrong path looks promising for a few steps, so careful reading pays off. Every wrong path still teaches a skill before it sends the team back. Stay alert right up to the very end.
 
 Each team gets three hints. Press **Ask Hajurama** in the taskbar whenever you feel stuck. The game saves as you play, so a page refresh picks up right where you left off. At the end you see your time, wrong passwords, hints used and traps visited.
 

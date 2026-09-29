@@ -15,7 +15,7 @@ import {
 } from "./content";
 import { nextMilestone, pathIsTrap, idsTo, restoreNode } from "./logic";
 
-const SAVE_KEY = "hajurama-box-save-v2";
+export const SAVE_KEY = "hajurama-box-save-v2";
 const REDUCED = typeof window !== "undefined" &&
   window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -47,6 +47,7 @@ export interface Persisted {
   started: boolean;
   finished: boolean;
   finishedMs: number | null; // frozen elapsed time when BOX opened
+  prizeResult: null | "fell" | "passed"; // final eSewa prank
   coachStep: number;
   startTs: number;
   accumMs: number;
@@ -90,6 +91,7 @@ function freshPersisted(team = ""): Persisted {
     started: false,
     finished: false,
     finishedMs: null,
+    prizeResult: null,
     coachStep: 0,
     startTs: Date.now(),
     accumMs: 0,
@@ -123,7 +125,7 @@ export function initialState(): State {
   return { ...initial, ...freshPersisted(), phase: "landing", windows: [], zTop: 1 };
 }
 
-function load(): State {
+export function load(): State {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return initial;
@@ -146,14 +148,14 @@ function load(): State {
   }
 }
 
-function persisted(s: State): Persisted {
+export function persisted(s: State): Persisted {
   const {
-    team, started, finished, finishedMs, coachStep, startTs, accumMs, tokens, hintLevels,
+    team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintLevels,
     milestones, skills, wrongPasswords, trapsVisited, unlocked, fsRoots,
     docEdits, design, revealFlags,
   } = s;
   return {
-    team, started, finished, finishedMs, coachStep, startTs, accumMs, tokens, hintLevels,
+    team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintLevels,
     milestones, skills, wrongPasswords, trapsVisited, unlocked, fsRoots,
     docEdits, design, revealFlags,
   };
@@ -181,6 +183,7 @@ export type Action =
   | { type: "move"; id: number; x: number; y: number }
   | { type: "unlock"; nodeId: string }
   | { type: "wrong-password" }
+  | { type: "prize"; result: "fell" | "passed" }
   | { type: "milestone"; m: Milestone }
   | { type: "skill"; k: SkillKey }
   | { type: "hint" }
@@ -374,6 +377,17 @@ export function reducer(state: State, a: Action): State {
     }
     case "wrong-password":
       return { ...state, wrongPasswords: state.wrongPasswords + 1 };
+    case "prize": {
+      if (state.prizeResult) return state;
+      if (a.result === "passed") {
+        return {
+          ...state,
+          prizeResult: "passed",
+          skills: { ...state.skills, scamRefuse: true },
+        };
+      }
+      return { ...state, prizeResult: "fell" };
+    }
     case "milestone":
       if (state.milestones[a.m]) return state;
       return { ...state, milestones: { ...state.milestones, [a.m]: true } };
@@ -539,7 +553,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return rest;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    state.team, state.started, state.finished, state.finishedMs, state.coachStep,
+    state.team, state.started, state.finished, state.finishedMs, state.prizeResult, state.coachStep,
     state.startTs, state.accumMs, state.tokens, state.hintLevels, state.milestones,
     state.skills, state.wrongPasswords, state.trapsVisited, state.unlocked,
     state.fsRoots, state.docEdits, state.design, state.revealFlags, state.phase,

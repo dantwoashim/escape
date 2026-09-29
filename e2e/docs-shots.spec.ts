@@ -94,7 +94,11 @@ test("docs screenshots: explorer details + finale after full playthrough", async
   await page.fill('.pw-dialog input', "DASHAIN");
   await page.keyboard.press("Enter");
   await expect(page.locator(".finale")).toBeVisible({ timeout: 5000 });
+  // refuse the fake prize so the blessing shows with the "Passed" stat
+  const offer = page.locator('.prize-card[data-stage="offer"]');
+  await expect(offer).toBeVisible({ timeout: 8000 });
+  await offer.getByText("Not now").click();
+  await page.getByRole("button", { name: "Open my real gift" }).click();
   await expect(page.locator(".finale")).toContainText("With love, Hajurama");
-  await page.waitForTimeout(1600); // lid transition
   await shot(page, "finale"); // docs/finale.png
 });

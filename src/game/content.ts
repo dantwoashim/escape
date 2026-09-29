@@ -715,6 +715,7 @@ export const SKILLS = {
   calculator: "Used the Calculator",
   password: "Opened a locked file",
   google: "Reached a Google-search clue",
+  scamRefuse: "Refused a fake eSewa login",
 } as const;
 
 export type SkillKey = keyof typeof SKILLS;

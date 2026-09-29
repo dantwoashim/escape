@@ -6,7 +6,15 @@ import {
 import {
   sortNodes, restoreNode, replaceAllCount, clueRevealed, nextMilestone, pathIsTrap, idsTo,
 } from "../src/game/logic";
-import { reducer, elapsed, initialState, State } from "../src/game/state";
+import { reducer, elapsed, initialState, load, persisted, SAVE_KEY, State } from "../src/game/state";
+
+const store = new Map<string, string>();
+(globalThis as Record<string, unknown>).localStorage = {
+  getItem: (k: string) => store.get(k) ?? null,
+  setItem: (k: string, v: string) => { store.set(k, String(v)); },
+  removeItem: (k: string) => { store.delete(k); },
+  clear: () => store.clear(),
+};
 import { SEGMENTS } from "../src/game/sevenseg";
 
 describe("caesar (matches build.py outputs)", () => {
@@ -123,6 +131,34 @@ describe("timer freeze on finish (#9)", () => {
     expect(s.finale).toBe(true);
     expect(s.finishedMs).not.toBeNull();
     expect(elapsed(s)).toBe(s.finishedMs);
+  });
+});
+
+describe("final prize prank", () => {
+  it("prize action sets prizeResult; play-again resets it", () => {
+    let s: State = initialState();
+    const fell = reducer(s, { type: "prize", result: "fell" });
+    expect(fell.prizeResult).toBe("fell");
+    const passed = reducer(s, { type: "prize", result: "passed" });
+    expect(passed.prizeResult).toBe("passed");
+    expect(passed.skills.scamRefuse).toBe(true);
+    expect(fell.skills.scamRefuse).toBeUndefined();
+    const again = reducer(fell, { type: "play-again" });
+    expect(again.prizeResult).toBeNull();
+    // first choice sticks
+    expect(reducer(fell, { type: "prize", result: "passed" }).prizeResult).toBe("fell");
+  });
+  it("prizeResult is persisted; old saves without it load as null", () => {
+    store.clear();
+    let s: State = initialState();
+    s = reducer(s, { type: "start", team: "T" });
+    s = reducer(s, { type: "prize", result: "fell" });
+    expect(persisted(s).prizeResult).toBe("fell");
+    store.set(SAVE_KEY, JSON.stringify(persisted(s)));
+    expect(load().prizeResult).toBe("fell");
+    // old save: field missing -> null
+    store.set(SAVE_KEY, JSON.stringify({ started: true, team: "T", fsRoots: desktopNodes }));
+    expect(load().prizeResult).toBeNull();
   });
 });
 

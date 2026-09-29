@@ -21,6 +21,7 @@ const TRAPS: [string, string][] = [
   ["Water Tap", "clue is 1pt: zoom or font up; 0.7734 → HELLO opens note"],
   ["Temple", `Ctrl+H replace @ with nothing → Google flower → RHODODENDRON → key 3 → "${TEMPLE_END}"`],
   ["Shepherd B", "right-click → Properties → Details → 'how many months have 28 days?' → 12 opens liar"],
+  ["Final prize", "fake eSewa login after BOX opens. Right move: Not now. Typing an ID and password counts as falling for it."],
 ];
 
 const STEP_LABELS: Record<string, string> = {
@@ -47,6 +48,7 @@ export default function TeacherPanel() {
       <h3>Answers &amp; progress</h3>
       <div style={{ color: "var(--ink-2)" }}>
         Team: <b>{state.team || "(no name)"}</b> · next step: <b>{current}</b> · tokens: {state.tokens}
+        {" · "}prize: <b>{state.prizeResult === "fell" ? "fell for it" : state.prizeResult === "passed" ? "passed" : "waiting"}</b>
       </div>
       <h4 style={{ margin: "10px 0 2px" }}>Correct path</h4>
       <table>

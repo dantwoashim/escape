@@ -153,7 +153,7 @@ test("full correct-path playthrough to finale", async ({ page }) => {
   await page.fill('.pw-dialog input', "dashain");
   await page.keyboard.press("Enter");
   await expect(page.locator(".finale")).toBeVisible({ timeout: 5000 });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(1600);
   // the open lid must be fully inside the 1366x768 viewport
   const lid = await page.evaluate(() => {
     const lidEl = document.querySelector(".finale svg g[style*='transform-origin']") as SVGGElement | null;
@@ -164,12 +164,64 @@ test("full correct-path playthrough to finale", async ({ page }) => {
   expect(lid.bottom).toBeLessThanOrEqual(768);
   expect(lid.left).toBeGreaterThanOrEqual(0);
   expect(lid.right).toBeLessThanOrEqual(1366);
-  await shot(page, "finale-1366");
   await expect(page.locator(".finale")).toContainText("You found Hajurama");
+
+  // ---- final prize prank: fake eSewa login ----
+  const offer = page.locator('.prize-card[data-stage="offer"]');
+  await expect(offer).toBeVisible({ timeout: 5000 });
+  await expect(offer).toContainText("Rs 1,00,000");
+  await expect(page.locator(".finale")).not.toContainText("With love");
+  await shot(page, "prize-offer-1366");
+  // empty submit → inline error, still stage 1
+  await offer.getByRole("button", { name: /Receive Rs/ }).click();
+  await expect(offer).toContainText("Enter your eSewa ID and password");
+  // reload: prizeResult still null → offer shows again
+  await page.reload();
+  const offer2 = page.locator('.prize-card[data-stage="offer"]');
+  await expect(offer2).toBeVisible({ timeout: 8000 });
+  // masked field is a text input rendered as discs (never type=password)
+  const pwInput = offer2.getByLabel("eSewa password");
+  await expect(pwInput).toHaveAttribute("type", "text");
+  expect(await pwInput.evaluate((el) => getComputedStyle(el).getPropertyValue("-webkit-text-security"))).toBe("disc");
+  // fall for it
+  await offer2.getByLabel("eSewa ID").fill("9800000000");
+  await pwInput.fill("hunter2secret");
+  await offer2.getByRole("button", { name: /Receive Rs/ }).click();
+  await expect(page.locator('.prize-card[data-stage="fell"]')).toContainText("disappointed");
+  await shot(page, "prize-fell-1366");
+  // nothing typed was ever persisted
+  const stored = await page.evaluate(() => JSON.stringify(Object.entries(localStorage)));
+  expect(stored).not.toContain("9800000000");
+  expect(stored).not.toContain("hunter2secret");
+  await page.getByRole("button", { name: "Sorry, Hajurama" }).click();
+  await expect(page.locator(".finale")).toContainText("With love, Hajurama");
+  await expect(page.locator(".finale")).toContainText("Fell for it");
+  await shot(page, "finale-1366");
   // frozen time: timer equals finale time and doesn't advance
   const finaleTime = await page.locator(".finale .stat .v").first().textContent();
   await page.waitForTimeout(1500);
   expect(await page.locator(".finale .stat .v").first().textContent()).toBe(finaleTime);
+});
+
+test("prize scam: Not now passes the real test", async ({ page }) => {
+  await startGame(page);
+  await page.waitForTimeout(500); // let the save land
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("hajurama-box-save-v2")!));
+  saved.finished = true;
+  saved.finishedMs = 1234567;
+  saved.prizeResult = null;
+  await page.evaluate((s) => localStorage.setItem("hajurama-box-save-v2", JSON.stringify(s)), saved);
+  await page.reload();
+  const offer = page.locator('.prize-card[data-stage="offer"]');
+  await expect(offer).toBeVisible({ timeout: 8000 });
+  await offer.getByText("Not now").click();
+  await expect(page.locator('.prize-card[data-stage="passed"]')).toContainText("Shabash");
+  await shot(page, "prize-passed-1366");
+  await page.getByRole("button", { name: "Open my real gift" }).click();
+  await expect(page.locator(".finale")).toContainText("With love, Hajurama");
+  await expect(page.locator(".finale")).toContainText("Passed");
+  await expect(page.locator(".finale")).toContainText("Refused a fake eSewa login");
+  await shot(page, "finale-5stats-1366");
 });
 
 test("trap paths: temple, tea shop, water tap, shepherd B", async ({ page }) => {
