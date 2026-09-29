@@ -12,9 +12,6 @@ Open the link in Chrome, type a team name and press **Start the hunt**. It plays
 
 Hajurama hid her old wooden box somewhere in the village before Dashain. She left a letter, a few folders and a trail of clues on her computer. Follow the clues, open the box and read her blessing.
 
-## Who it is for
-
-I made this for a small class of students from Nepali villages who are just getting comfortable with computers. It suits anyone learning the basics, from about age 14 and up. A team of two or three players usually finishes in 20 to 30 minutes.
 
 ## What players learn
 
