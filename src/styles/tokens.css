@@ -1,0 +1,21 @@
+:root {
+  --paper: #F3EDE3;
+  --surface: #FBF8F3;
+  --surface-2: #F0EAE0;
+  --ink: #221E1A;
+  --ink-2: #6E655B;
+  --line: rgba(34, 30, 26, 0.10);
+  --line-2: rgba(34, 30, 26, 0.18);
+  --accent: #A8502E;
+  --accent-soft: rgba(168, 80, 46, 0.10);
+  --success: #4F6B52;
+  --error: #A33A2C;
+  --shadow-lg: 0 24px 48px -18px rgba(60, 40, 20, 0.28);
+  --shadow-sm: 0 2px 6px rgba(60, 40, 20, 0.08);
+  --radius-win: 12px;
+  --radius-ctl: 8px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --font-ui: "Geist", system-ui, sans-serif;
+  --font-serif: "Fraunces Variable", Georgia, serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+}
