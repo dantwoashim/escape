@@ -1,4 +1,4 @@
-// Pure game logic — unit-testable, no React.
+// Pure game logic, unit-testable, no React.
 import {
   FSNode, Milestone, MILESTONES, TRAP_ROOTS, findNode, pathTo, boxRoot,
 } from "./content";
@@ -107,6 +107,34 @@ export function clueRevealed(clue: Rect & { z: number }, basket: (Rect & { z: nu
   if (!basket) return true;
   if (clue.z > basket.z) return true;
   return overlapRatio(clue, basket) < 0.2;
+}
+
+// A trap only counts once its ending was reached.
+type TrapSignals = { revealFlags: Record<string, boolean>; unlocked: string[] };
+const TRAP_DONE: Record<string, (s: TrapSignals) => boolean> = {
+  "tea-shop": (s) => !!s.revealFlags.scam,
+  "water-tap": (s) => s.unlocked.includes("note"),
+  "temple": (s) => s.unlocked.includes("blessing"),
+  "shepherd-b": (s) => s.unlocked.includes("liar"),
+};
+export function clearedTraps(s: TrapSignals): string[] {
+  return TRAP_ROOTS.filter((r) => TRAP_DONE[r](s));
+}
+
+// distinct trap roots the player stepped into
+export function trapsFound(s: { trapsVisited: string[] }): string[] {
+  const found = new Set<string>();
+  for (const id of s.trapsVisited) {
+    for (const i of idsTo(id)) {
+      if (TRAP_ROOTS.includes(i)) found.add(i);
+    }
+  }
+  return TRAP_ROOTS.filter((r) => found.has(r));
+}
+
+// score = time + 1 min per hint + 30 s per wrong password
+export function score(timeMs: number, hintsUsed: number, wrongPasswords: number): number {
+  return timeMs + 60000 * hintsUsed + 30000 * wrongPasswords;
 }
 
 export function fmtTime(ms: number): string {

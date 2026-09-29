@@ -29,6 +29,7 @@ async function closeTopWin(page: Page) {
 
 test("docs screenshots: explorer details + finale after full playthrough", async ({ page }) => {
   await page.goto("/");
+  await shot(page, "landing"); // docs/landing.png
   await page.fill("#team", "Team Peepal");
   await page.click("text=Start the hunt");
   const coach = page.locator(".coach");
@@ -44,7 +45,7 @@ test("docs screenshots: explorer details + finale after full playthrough", async
   await page.locator('.view-switch button[title="Details"]').click();
   await page.locator('th[data-col="modified"]').click();
   await expect(page.locator("table.details tbody tr").first()).toContainText("leaf 17");
-  await shot(page, "explorer"); // docs/explorer.png — breadcrumb + sorted details
+  await shot(page, "explorer"); // docs/explorer.png, breadcrumb + sorted details
 
   await dbl(page, "leaf-17");
   await expect(page.locator(".window .word").last()).toContainText("MOMO + MOMO");
@@ -101,4 +102,7 @@ test("docs screenshots: explorer details + finale after full playthrough", async
   await page.getByRole("button", { name: "Open my real gift" }).click();
   await expect(page.locator(".finale")).toContainText("With love, Hajurama");
   await shot(page, "finale"); // docs/finale.png
+  const EVID = path.resolve("evidence");
+  fs.mkdirSync(EVID, { recursive: true });
+  await page.screenshot({ path: path.join(EVID, "finale-challenges-1920.png"), animations: "disabled" });
 });

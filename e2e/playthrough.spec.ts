@@ -64,7 +64,7 @@ test("full correct-path playthrough to finale", async ({ page }) => {
   await expect(page.locator(".page")).toContainText("JR ZKHUH SHRSOH UHVW");
   await closeTopWin(page);
 
-  // Chautari → details sort → leaf 17
+  // Chautari, details sort, leaf 17
   await dbl(page, "chautari");
   // breadcrumb shows the full nested path
   await expect(page.locator(".breadcrumb")).toContainText("Desktop");
@@ -91,7 +91,7 @@ test("full correct-path playthrough to finale", async ({ page }) => {
   await expect(page.locator(".window .word").last()).toContainText("Shepherd B is lying");
   await closeTopWin(page);
 
-  // Shepherd A → Hajurama's Picture → drag basket away
+  // Shepherd A, Hajurama's Picture, drag basket away
   await dbl(page, "shepherd-a");
   // deeper still: breadcrumb includes Shepherd A
   await expect(page.locator(".breadcrumb")).toContainText("Shepherd A");
@@ -122,7 +122,7 @@ test("full correct-path playthrough to finale", async ({ page }) => {
   await shot(page, "designer-after-1366");
   await closeTopWin(page);
 
-  // Recycle Bin via start menu → restore last page
+  // Recycle Bin via start menu, restore last page
   await page.click(".start-btn");
   await page.click(".sm-item:has-text('Recycle Bin')");
   await expect(page.getByRole("dialog", { name: "Recycle Bin" })).toBeVisible();
@@ -133,7 +133,7 @@ test("full correct-path playthrough to finale", async ({ page }) => {
   await expect(page.locator(".window").last()).toContainText("Recycle Bin is empty");
   await closeTopWin(page);
 
-  // navigate explorer back to Shepherd A → last page
+  // navigate explorer back to Shepherd A, last page
   await dbl(page, "last-page");
   await expect(page.locator(".window .word").last()).toContainText("Tenzing Norgay");
   await expect(page.locator(".window .word").last()).toContainText("Ctrl + T");
@@ -172,10 +172,10 @@ test("full correct-path playthrough to finale", async ({ page }) => {
   await expect(offer).toContainText("Rs 1,00,000");
   await expect(page.locator(".finale")).not.toContainText("With love");
   await shot(page, "prize-offer-1366");
-  // empty submit → inline error, still stage 1
+  // empty submit shows the inline error, still stage 1
   await offer.getByRole("button", { name: /Receive Rs/ }).click();
   await expect(offer).toContainText("Enter your eSewa ID and password");
-  // reload: prizeResult still null → offer shows again
+  // reload: prizeResult still null, so the offer shows again
   await page.reload();
   const offer2 = page.locator('.prize-card[data-stage="offer"]');
   await expect(offer2).toBeVisible({ timeout: 8000 });
@@ -196,11 +196,83 @@ test("full correct-path playthrough to finale", async ({ page }) => {
   await page.getByRole("button", { name: "Sorry, Hajurama" }).click();
   await expect(page.locator(".finale")).toContainText("With love, Hajurama");
   await expect(page.locator(".finale")).toContainText("Fell for it");
+  // score = shown time + 0 hints + 1 wrong password (the "43" at FORK)
+  const shownTime = await page.locator(".stat", { hasText: "Time" }).locator(".v").textContent();
+  const [mm, ss] = shownTime!.split(":").map(Number);
+  const expectedScore = `${String(Math.floor((mm * 60 + ss + 30) / 60)).padStart(2, "0")}:${String((mm * 60 + ss + 30) % 60).padStart(2, "0")}`;
+  await expect(page.locator(".score-v")).toHaveText(expectedScore);
+  // Perfect Run is not done (1 wrong password), Never Fooled not done
+  await expect(page.locator('.challenge[data-challenge="Perfect Run"]')).not.toHaveClass(/done/);
+  await expect(page.locator('.challenge[data-challenge="Never Fooled"]')).not.toHaveClass(/done/);
+  await expect(page.locator('.challenge[data-challenge="Trap Master"]')).toContainText("0/4");
+  // the current run is recorded and highlighted in past runs
+  await expect(page.locator(".runs-table tr.current")).toContainText("Team Peepal");
   await shot(page, "finale-1366");
   // frozen time: timer equals finale time and doesn't advance
   const finaleTime = await page.locator(".finale .stat .v").first().textContent();
   await page.waitForTimeout(1500);
   expect(await page.locator(".finale .stat .v").first().textContent()).toBe(finaleTime);
+});
+
+test("replay: Try a challenge, trap chip, New team keeps runs", async ({ page }) => {
+  await startGame(page);
+  await page.waitForTimeout(500);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("hajurama-box-save-v2")!));
+  saved.finished = true;
+  saved.finishedMs = 600000;
+  saved.prizeResult = null;
+  await page.evaluate((s) => localStorage.setItem("hajurama-box-save-v2", JSON.stringify(s)), saved);
+  await page.reload();
+  const offer = page.locator('.prize-card[data-stage="offer"]');
+  await expect(offer).toBeVisible({ timeout: 8000 });
+  await offer.getByText("Not now").click();
+  await page.getByRole("button", { name: "Open my real gift" }).click();
+  await expect(page.locator(".finale")).toContainText("With love, Hajurama");
+
+  // Try a challenge: straight to desktop, same team, no coach marks
+  await page.getByRole("button", { name: /Try a challenge/ }).click();
+  await expect(page.locator(".taskbar")).toBeVisible();
+  expect(await page.locator(".coach").count()).toBe(0);
+  await expect(page.locator(".trap-chip")).toContainText("Traps 0/4");
+  await shot(page, "replay-taskbar-1366");
+
+  // clear the tea shop trap end: PIN input reveals the scam lesson
+  await page.locator('[data-desk="box-root"]').dblclick();
+  await dbl(page, "tea-shop");
+  await dbl(page, "prize");
+  await page.fill('.field-row input[aria-label="PIN"]', "1234");
+  await page.waitForTimeout(1400);
+  await expect(page.locator(".window .word").last()).toContainText("phone scams work");
+  await expect(page.locator(".trap-chip")).toContainText("Traps 1/4");
+  await page.reload();
+  const coach2 = page.locator(".coach");
+  if (await coach2.count()) await coach2.locator(".skip").click();
+  await expect(page.locator(".trap-chip")).toContainText("Traps 1/4");
+});
+
+test("New team goes to landing empty, past runs stay", async ({ page }) => {
+  await startGame(page);
+  await page.waitForTimeout(500);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("hajurama-box-save-v2")!));
+  saved.finished = true;
+  saved.finishedMs = 600000;
+  saved.prizeResult = "passed";
+  saved.team = "Old Team";
+  await page.evaluate((s) => {
+    localStorage.setItem("hajurama-box-save-v2", JSON.stringify(s));
+    localStorage.setItem("hajurama-box-runs-v1", JSON.stringify([
+      { id: 1, team: "Old Team", timeMs: 600000, hintsUsed: 0, wrongPasswords: 0, trapsCleared: [], prize: "passed", at: Date.now() },
+    ]));
+  }, saved);
+  await page.reload();
+  await expect(page.locator(".runs-table")).toContainText("Old Team");
+  page.on("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "New team" }).click();
+  await expect(page.locator(".landing")).toBeVisible();
+  await expect(page.locator("#team")).toHaveValue("");
+  await shot(page, "landing-1366");
+  const runs = await page.evaluate(() => localStorage.getItem("hajurama-box-runs-v1"));
+  expect(runs).toContain("Old Team");
 });
 
 test("prize scam: Not now passes the real test", async ({ page }) => {
@@ -228,7 +300,7 @@ test("trap paths: temple, tea shop, water tap, shepherd B", async ({ page }) => 
   await startGame(page);
   await openBox(page);
 
-  // Temple → Inside → Bell → prayer → Ctrl+H replace @
+  // Temple, Inside, Bell, prayer, Ctrl+H replace @
   await dbl(page, "temple");
   await dbl(page, "temple-inside");
   await dbl(page, "bell");
@@ -244,7 +316,7 @@ test("trap paths: temple, tea shop, water tap, shepherd B", async ({ page }) => 
   await expect(prayerWin).toContainText("national flower of Nepal");
   await closeTopWin(page);
 
-  // blessing password RHODODENDRON → trap message
+  // blessing password RHODODENDRON shows the trap message
   await dbl(page, "blessing");
   await page.fill('.pw-dialog input', "rhododendron");
   await page.keyboard.press("Enter");
@@ -255,7 +327,7 @@ test("trap paths: temple, tea shop, water tap, shepherd B", async ({ page }) => 
   await page.locator('.exp-toolbar .nav-btn[aria-label="Up"]').first().click();
   await page.locator('.exp-toolbar .nav-btn[aria-label="Up"]').first().click();
 
-  // Tea Shop → PRIZE → type PIN reveals scam page
+  // Tea Shop, PRIZE, typing a PIN reveals the scam page
   await dbl(page, "tea-shop");
   await dbl(page, "prize");
   await page.fill('.field-row input[aria-label="PIN"]', "1234");
@@ -265,7 +337,7 @@ test("trap paths: temple, tea shop, water tap, shepherd B", async ({ page }) => 
   await closeTopWin(page);
   await page.locator('.exp-toolbar .nav-btn[aria-label="Up"]').first().click();
 
-  // Water Tap → Bucket → clue (1pt) → zoom, note HELLO
+  // Water Tap, Bucket, clue (1pt), zoom, note HELLO
   await dbl(page, "water-tap");
   await dbl(page, "bucket");
   await dbl(page, "clue");
@@ -291,7 +363,7 @@ test("trap paths: temple, tea shop, water tap, shepherd B", async ({ page }) => 
   await page.locator('.exp-toolbar .nav-btn[aria-label="Up"]').first().click();
   await page.locator('.exp-toolbar .nav-btn[aria-label="Up"]').first().click();
 
-  // Shepherd B: navigate, right-click image → Properties → Details
+  // Shepherd B: right-click image, Properties, Details
   await dbl(page, "chautari");
   await dbl(page, "shepherd-b");
   const img = page.locator('[data-file="shepherd-b-img"]').last();
@@ -306,6 +378,22 @@ test("trap paths: temple, tea shop, water tap, shepherd B", async ({ page }) => 
   await page.fill('.pw-dialog input', "12");
   await page.keyboard.press("Enter");
   await expect(page.locator(".window .word").last()).toContainText("ALWAYS lie");
+  await closeTopWin(page);
+
+  // all 4 traps cleared, finish the game and check the challenges
+  await page.locator('.exp-toolbar .nav-btn[aria-label="Up"]').first().click();
+  await page.locator('.exp-toolbar .nav-btn[aria-label="Up"]').first().click();
+  await dbl(page, "box");
+  await page.fill('.pw-dialog input', "dashain");
+  await page.keyboard.press("Enter");
+  const offer = page.locator('.prize-card[data-stage="offer"]');
+  await expect(offer).toBeVisible({ timeout: 8000 });
+  await offer.getByText("Not now").click();
+  await page.getByRole("button", { name: "Open my real gift" }).click();
+  await expect(page.locator(".finale")).toContainText("With love, Hajurama");
+  await expect(page.locator('.challenge[data-challenge="Trap Master"]')).toHaveClass(/done/);
+  await expect(page.locator('.challenge[data-challenge="Never Fooled"]')).toHaveClass(/done/);
+  await shot(page, "finale-challenges-1366");
 });
 
 test("hint button costs tokens and shows text; reload resumes progress", async ({ page }) => {
@@ -314,18 +402,18 @@ test("hint button costs tokens and shows text; reload resumes progress", async (
   await dbl(page, "start-here");
   await page.locator(".window .word .page").first().click();
   await page.keyboard.press("Control+a");
-  // ask hint → level 1 for next milestone (enteredChautari)
+  // ask hint, level 1 for next milestone (enteredChautari)
   await page.click(".hint-btn");
   await expect(page.locator(".hint-card")).toContainText("big tree");
   await shot(page, "hint-level1-1366");
   await page.click(".hint-card .close");
-  // reload → resumed straight into the game: tokens=2, milestones kept
+  // reload resumes straight into the game: tokens=2, milestones kept
   await page.reload();
   const coach = page.locator(".coach");
   if (await coach.count()) await coach.locator(".skip").click();
   await expect(page.locator(".taskbar")).toBeVisible();
   await expect(page.locator(".hint-btn")).toContainText("2");
-  // hint again → level 2
+  // hint again gives level 2
   await page.click(".hint-btn");
   await expect(page.locator(".hint-card")).toContainText("Chautari");
 });
@@ -338,4 +426,23 @@ test("teacher panel via hash", async ({ page }) => {
   if (await coach.count()) await coach.locator(".skip").click();
   await expect(page.locator(".teacher")).toContainText("FORK→42");
   await shot(page, "teacher-panel-1366");
+
+  // past runs table + clear
+  await page.evaluate(() => {
+    localStorage.setItem("hajurama-box-runs-v1", JSON.stringify([
+      { id: 1, team: "Run A", timeMs: 600000, hintsUsed: 1, wrongPasswords: 0, trapsCleared: ["tea-shop"], prize: "passed", at: 1 },
+    ]));
+  });
+  await page.reload();
+  await page.goto("/#teacher");
+  await page.waitForTimeout(500);
+  const coachB = page.locator(".coach");
+  if (await coachB.count()) await coachB.locator(".skip").click();
+  await page.keyboard.press("Control+Alt+h");
+  await expect(page.locator(".teacher")).toBeVisible();
+  await expect(page.locator(".teacher .teacher-runs")).toContainText("Run A");
+  page.on("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Clear past runs" }).click();
+  await expect(page.locator(".teacher")).toContainText("None yet.");
+  expect(await page.evaluate(() => localStorage.getItem("hajurama-box-runs-v1"))).toBeNull();
 });

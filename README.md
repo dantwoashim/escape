@@ -34,7 +34,9 @@ Hajurama hid her old wooden box somewhere in the village before Dashain. She lef
 
 The village has one right path and four wrong ones. Each wrong path looks promising for a few steps, so careful reading pays off. Every wrong path still teaches a skill before it sends the team back. Stay alert right up to the very end.
 
-Each team gets three hints. Press **Ask Hajurama** in the taskbar whenever you feel stuck. The game saves as you play, so a page refresh picks up right where you left off. At the end you see your time, wrong passwords, hints used and traps visited.
+Each team gets three hints. Press **Ask Hajurama** in the taskbar whenever you feel stuck. The game saves as you play, so a page refresh picks up right where you left off. At the end you get a score: your time, plus 1 minute for every hint and 30 seconds for every wrong password.
+
+Finished early? Press **Try a challenge** on the last screen. Trap Master asks you to reach the end of all four wrong paths. Perfect Run asks for zero hints and zero wrong passwords. Every run stays on that computer, so teams can compare scores.
 
 ![Moving the basket in the design app](docs/designer.png)
 

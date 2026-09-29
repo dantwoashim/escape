@@ -1,8 +1,10 @@
 
+import { useState } from "react";
 import { useMeta, useActions } from "../game/state";
 import { MILESTONES } from "../game/state";
 import { caesar, FIRST_CLUE, FINAL_WORD, TEMPLE_END } from "../game/content";
-import { nextMilestone } from "../game/logic";
+import { nextMilestone, fmtTime, score } from "../game/logic";
+import { loadRuns, clearRuns } from "../game/runs";
 
 const ANSWERS: [string, string][] = [
   ["START HERE", `Ctrl+A shows: ${caesar(FIRST_CLUE, 3)} → key 3 → ${FIRST_CLUE} → Chautari`],
@@ -42,6 +44,7 @@ export default function TeacherPanel() {
   const { dispatch } = useActions();
   const next = nextMilestone(state.milestones);
   const current = next ? STEP_LABELS[next] ?? next : "Done, they found the box";
+  const [runs, setRuns] = useState(() => loadRuns());
   return (
     <div className="teacher" data-teacher>
       <span className="tag">Teacher only</span>
@@ -74,8 +77,42 @@ export default function TeacherPanel() {
       <div style={{ fontSize: 11.5, color: "var(--ink-2)" }}>
         {MILESTONES.map((m) => `${state.milestones[m] ? "☑" : "☐"} ${STEP_LABELS[m] ?? m}`).join("  ")}
       </div>
+      <h4 style={{ margin: "8px 0 2px" }}>Past runs on this computer</h4>
+      {runs.length === 0 ? (
+        <div style={{ fontSize: 11.5, color: "var(--ink-2)" }}>None yet.</div>
+      ) : (
+        <table className="teacher-runs">
+          <thead>
+            <tr><th>Team</th><th>Time</th><th>Hints</th><th>Wrong</th><th>Traps</th><th>Prize</th><th>Score</th></tr>
+          </thead>
+          <tbody>
+            {[...runs].reverse().map((r) => (
+              <tr key={r.id}>
+                <td>{r.team || "(no name)"}</td>
+                <td>{fmtTime(r.timeMs)}</td>
+                <td>{r.hintsUsed}</td>
+                <td>{r.wrongPasswords}</td>
+                <td>{r.trapsCleared.length}/4</td>
+                <td>{r.prize === "passed" ? "passed" : "fell"}</td>
+                <td>{fmtTime(score(r.timeMs, r.hintsUsed, r.wrongPasswords))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       <div className="row">
         <button className="btn" onClick={() => dispatch({ type: "teacher-token" })}>+1 hint token</button>
+        <button
+          className="btn"
+          onClick={() => {
+            if (window.confirm("Delete all past runs on this computer?")) {
+              clearRuns();
+              setRuns([]);
+            }
+          }}
+        >
+          Clear past runs
+        </button>
         <button
           className="btn"
           onClick={() => {

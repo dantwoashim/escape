@@ -37,7 +37,7 @@ async function frameStats(page: any) {
 const renderCounts = (page: any) =>
   page.evaluate(() => ({ ...((window as any).__rb ?? {}) }));
 
-test("perf: window drag with 3 windows open — 60fps path, no body re-renders", async ({ page }) => {
+test("window drag stays smooth with 3 windows open", async ({ page }) => {
   await page.goto("/");
   await page.fill("#team", "Perf");
   await page.click("text=Start the hunt");
@@ -99,7 +99,7 @@ test("perf: window drag with 3 windows open — 60fps path, no body re-renders",
   }
 });
 
-test("perf: design element drag stays on the transform path", async ({ page }) => {
+test("design element drag stays on the transform path", async ({ page }) => {
   await page.goto("/");
   await page.fill("#team", "Perf");
   await page.click("text=Start the hunt");

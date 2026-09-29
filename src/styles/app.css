@@ -502,6 +502,61 @@ mark.hit { background: rgba(168,80,46,.3); color: var(--ink); border-radius: 2px
 .prize-card.fell .prize-btn { background: var(--ink); }
 .prize-card.fell .prize-btn:hover { background: var(--accent); }
 
+/* finale result screen */
+.finale-cols { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.finale-left { display: flex; flex-direction: column; align-items: center; }
+.finale-right {
+  display: flex; flex-direction: column; align-items: center; width: 100%;
+  gap: 8px; margin-top: 6px;
+}
+@media (min-width: 1200px) {
+  .finale-cols {
+    flex-direction: row; align-items: flex-start; justify-content: center;
+    gap: 48px; width: 100%;
+  }
+  .finale-left { width: 380px; flex: none; }
+  .finale-right { width: 480px; flex: none; align-items: stretch; text-align: left; margin-top: 0; }
+}
+.score-block { text-align: center; }
+.score-v { font-family: var(--font-mono); font-size: 34px; font-weight: 700; line-height: 1.05; }
+.score-k { font-size: 10.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.1em; }
+.score-x { font-size: 11.5px; color: var(--ink-2); margin-top: 2px; }
+.challenges {
+  width: 100%; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-ctl); padding: 8px 12px; display: flex; flex-direction: column; gap: 6px;
+}
+.challenge { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; }
+.challenge .mark {
+  width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--line-2);
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  color: #fff; transform: translateY(2px);
+}
+.challenge.done .mark { background: var(--success); border-color: var(--success); }
+.challenge .cname { font-weight: 700; flex: none; }
+.challenge .cdesc { color: var(--ink-2); font-size: 11.5px; }
+.runs-card {
+  width: 100%; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-ctl); padding: 8px 12px;
+}
+.runs-card h4 { margin: 0 0 4px; font-size: 12px; }
+.runs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.runs-table td { padding: 3px 6px 3px 0; }
+.runs-table .t { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runs-table .mono { font-family: var(--font-mono); }
+.runs-table tr.current .t { font-weight: 700; }
+.runs-table tr.current .t::after { content: " (this run)"; font-weight: 400; color: var(--ink-2); }
+.runs-table .marks span {
+  display: inline-block; width: 15px; height: 15px; line-height: 15px; text-align: center;
+  font-size: 9.5px; font-weight: 700; border-radius: 3px; margin-right: 3px;
+  border: 1px solid var(--line-2); color: var(--ink-2); opacity: 0.45;
+}
+.runs-table .marks span.on { background: var(--success); border-color: var(--success); color: #fff; opacity: 1; }
+.finale-btns { display: flex; gap: 10px; align-items: center; justify-content: center; }
+.trap-chip {
+  display: inline-flex; align-items: center; cursor: default;
+  font-family: var(--font-mono); font-size: 12px;
+}
+
 /* ---------- teacher panel ---------- */
 .teacher {
   position: fixed; right: 14px; top: 14px; z-index: 1800; width: 380px; max-height: 80vh; overflow: auto;

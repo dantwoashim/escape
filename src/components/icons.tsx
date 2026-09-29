@@ -1,4 +1,4 @@
-// Handcrafted SVG icons — consistent 1.6 stroke, warm palette.
+// SVG icons, consistent 1.6 stroke, warm palette.
 import type { ReactNode } from "react";
 
 

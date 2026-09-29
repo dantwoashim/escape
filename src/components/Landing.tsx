@@ -57,10 +57,11 @@ export default function Landing() {
     <>
       <div className="landing">
         <div className="landing-left">
-          <div className="eyebrow">A treasure hunt for young computer explorers</div>
+          <div className="eyebrow">A treasure hunt on Hajurama's computer</div>
           <h1>Hajurama's Box</h1>
           <p className="desc">
-            A treasure hunt inside a computer. Find Grandmother's hidden box before the sun sets.
+            Hajurama hid her old box before Dashain and left the clues on her computer.
+            Open her folders, crack her codes and find it.
           </p>
           <div className="field">
             <label htmlFor="team">Team name</label>
@@ -83,7 +84,7 @@ export default function Landing() {
               </button>
             )}
           </div>
-          <div className="meta-line">20–25 minutes · 2–3 players · best on a computer</div>
+          <div className="meta-line">About 10 minutes · 2 or 3 players · play it on a computer</div>
         </div>
         <div className="landing-art"><BoxArt /></div>
       </div>
@@ -91,7 +92,7 @@ export default function Landing() {
         <div>
           <h2>Hajurama's Box needs a computer</h2>
           <p style={{ color: "var(--ink-2)" }}>
-            This is a game about using a real computer. Please open it on a laptop or desktop.
+            Open this on a laptop or desktop. The whole game happens on a computer screen.
           </p>
         </div>
       </div>

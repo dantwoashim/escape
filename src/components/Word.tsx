@@ -96,7 +96,7 @@ export default function Word({ win }: Props) {
     const collapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
     if (keys.size === 0) {
       if (!collapsed) {
-        // real selection exists but it's outside this document — do nothing
+        // real selection exists but it's outside this document, do nothing
         dispatch({ type: "toast", text: "Select some text in the document first." });
         return;
       }

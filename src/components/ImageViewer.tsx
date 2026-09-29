@@ -1,4 +1,4 @@
-// Shepherd B illustration — hills, shepherd with crook, painted text.
+// Shepherd B illustration: hills, shepherd with crook, painted text.
 export default function ImageViewer() {
   return (
     <div className="imageview">

@@ -2,9 +2,9 @@
 //
 // Contexts are split so a window move/drag commit only re-renders the moved
 // Frame, never other windows' bodies:
-//   ActCtx  — stable: dispatch + actions
-//   MetaCtx — everything except the windows array (incl. activeWin)
-//   WinCtx  — { windows, zTop }
+//   ActCtx:  stable, dispatch + actions
+//   MetaCtx: everything except the windows array (incl. activeWin)
+//   WinCtx:  { windows, zTop }
 import {
   createContext, useContext, useEffect, useMemo, useReducer, useRef,
 } from "react";
@@ -52,6 +52,7 @@ export interface Persisted {
   startTs: number;
   accumMs: number;
   tokens: number;
+  hintsUsed: number; // tokens spent, teacher grants don't lower it
   hintLevels: Partial<Record<Milestone, number>>;
   milestones: Record<string, boolean>;
   skills: Record<string, boolean>;
@@ -96,6 +97,7 @@ function freshPersisted(team = ""): Persisted {
     startTs: Date.now(),
     accumMs: 0,
     tokens: 3,
+    hintsUsed: 0,
     hintLevels: {},
     milestones: {},
     skills: {},
@@ -140,6 +142,7 @@ export function load(): State {
       activeWin: null,
       hintMessage: null,
       toast: null,
+      hintsUsed: p.hintsUsed ?? Math.max(0, 3 - (p.tokens ?? 3)), // old saves
       finale: !!p.finished, // finished games reopen on the finale
       teacher: false,
     };
@@ -150,12 +153,12 @@ export function load(): State {
 
 export function persisted(s: State): Persisted {
   const {
-    team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintLevels,
+    team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintsUsed, hintLevels,
     milestones, skills, wrongPasswords, trapsVisited, unlocked, fsRoots,
     docEdits, design, revealFlags,
   } = s;
   return {
-    team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintLevels,
+    team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintsUsed, hintLevels,
     milestones, skills, wrongPasswords, trapsVisited, unlocked, fsRoots,
     docEdits, design, revealFlags,
   };
@@ -194,6 +197,7 @@ export type Action =
   | { type: "reveal"; key: string }
   | { type: "toast"; text: string | null }
   | { type: "new-game" }
+  | { type: "replay" }
   | { type: "finale" }
   | { type: "play-again" }
   | { type: "teacher"; on: boolean }
@@ -331,7 +335,7 @@ export function reducer(state: State, a: Action): State {
     case "focus": {
       const w = state.windows.find((x) => x.id === a.id);
       if (!w) return state;
-      // no-op when already focused on top — avoids re-render storms per pointerdown
+      // no-op when already focused on top, avoids re-render storms per pointerdown
       if (state.activeWin === a.id && w.z === state.zTop && !w.minimized) return state;
       const zTop = state.zTop + 1;
       return {
@@ -404,18 +408,25 @@ export function reducer(state: State, a: Action): State {
         return {
           ...state,
           tokens: state.tokens - 1,
+          hintsUsed: state.hintsUsed + 1,
           hintMessage: { text: TRAP_HINT, step: "Hint" },
         };
       }
       const m = nextMilestone(state.milestones);
       if (!m) {
-        return { ...state, tokens: state.tokens - 1, hintMessage: { text: "You already know the way. Finish it!", step: "Hint" } };
+        return {
+          ...state,
+          tokens: state.tokens - 1,
+          hintsUsed: state.hintsUsed + 1,
+          hintMessage: { text: "You already know the way. Finish it!", step: "Hint" },
+        };
       }
       const level = (state.hintLevels[m] ?? 0) + 1;
       const text = HINTS[m][Math.min(level, 2) - 1];
       return {
         ...state,
         tokens: state.tokens - 1,
+        hintsUsed: state.hintsUsed + 1,
         hintLevels: { ...state.hintLevels, [m]: level },
         hintMessage: { text, step: `Hint ${level} of 2` },
       };
@@ -465,6 +476,17 @@ export function reducer(state: State, a: Action): State {
       return {
         ...freshPersisted(),
         phase: "landing",
+        windows: [], zTop: 1, activeWin: null,
+        hintMessage: null, toast: null, finale: false, teacher: state.teacher,
+      };
+    }
+    case "replay": {
+      // same team, fresh run straight to the desktop
+      return {
+        ...freshPersisted(state.team),
+        phase: "game",
+        started: true,
+        coachStep: 3,
         windows: [], zTop: 1, activeWin: null,
         hintMessage: null, toast: null, finale: false, teacher: state.teacher,
       };
@@ -554,7 +576,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     state.team, state.started, state.finished, state.finishedMs, state.prizeResult, state.coachStep,
-    state.startTs, state.accumMs, state.tokens, state.hintLevels, state.milestones,
+    state.startTs, state.accumMs, state.tokens, state.hintsUsed, state.hintLevels, state.milestones,
     state.skills, state.wrongPasswords, state.trapsVisited, state.unlocked,
     state.fsRoots, state.docEdits, state.design, state.revealFlags, state.phase,
     state.activeWin, state.hintMessage, state.toast, state.finale, state.teacher,

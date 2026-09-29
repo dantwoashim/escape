@@ -308,7 +308,7 @@ export function Properties({ win }: { win: Win }) {
               <Row k="Name" v={n.name} />
               <Row k="Type" v={typeName(n)} />
               <Row k="Location" v={n.location || "Desktop"} />
-              <Row k="Size" v={n.kind === "folder" ? "—" : formatSize(n.size ?? 0)} />
+              <Row k="Size" v={n.kind === "folder" ? "-" : formatSize(n.size ?? 0)} />
               <Row k="Modified" v={fmtDate(n.modified)} />
             </tbody>
           </table>

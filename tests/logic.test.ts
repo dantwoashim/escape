@@ -5,7 +5,9 @@ import {
 } from "../src/game/content";
 import {
   sortNodes, restoreNode, replaceAllCount, clueRevealed, nextMilestone, pathIsTrap, idsTo,
+  clearedTraps, trapsFound, score, fmtTime,
 } from "../src/game/logic";
+import { loadRuns, recordRun, clearRuns } from "../src/game/runs";
 import { reducer, elapsed, initialState, load, persisted, SAVE_KEY, State } from "../src/game/state";
 
 const store = new Map<string, string>();
@@ -162,6 +164,101 @@ describe("final prize prank", () => {
   });
 });
 
+describe("score and trap counting", () => {
+  it("score adds 1 min per hint and 30 s per wrong password", () => {
+    expect(score(600000, 2, 1)).toBe(750000);
+    expect(fmtTime(score(600000, 2, 1))).toBe("12:30");
+    expect(score(600000, 0, 0)).toBe(600000);
+  });
+  it("clearedTraps counts only trap endings", () => {
+    const base = { revealFlags: {} as Record<string, boolean>, unlocked: [] as string[] };
+    expect(clearedTraps(base)).toEqual([]);
+    expect(clearedTraps({ ...base, revealFlags: { scam: true } })).toEqual(["tea-shop"]);
+    expect(clearedTraps({ ...base, unlocked: ["note"] })).toEqual(["water-tap"]);
+    expect(clearedTraps({ ...base, unlocked: ["blessing"] })).toEqual(["temple"]);
+    expect(clearedTraps({ ...base, unlocked: ["liar"] })).toEqual(["shepherd-b"]);
+    // entered a trap but never finished it
+    expect(clearedTraps({ revealFlags: {}, unlocked: [] })).toHaveLength(0);
+    const all = { revealFlags: { scam: true }, unlocked: ["note", "blessing", "liar"] };
+    expect(clearedTraps(all)).toHaveLength(4);
+  });
+  it("trapsFound counts roots, not nodes", () => {
+    const s = { trapsVisited: ["tea-shop", "prize", "water-tap", "bucket", "clue", "note"] };
+    expect(trapsFound(s).sort()).toEqual(["tea-shop", "water-tap"]);
+    expect(trapsFound({ trapsVisited: [] })).toEqual([]);
+  });
+});
+
+describe("hintsUsed", () => {
+  it("counts every spent token, ignores teacher grants", () => {
+    let s: State = initialState();
+    s = reducer(s, { type: "start", team: "T" });
+    s = reducer(s, { type: "hint" });
+    expect(s.hintsUsed).toBe(1);
+    expect(s.tokens).toBe(2);
+    s = reducer(s, { type: "teacher-token" });
+    expect(s.hintsUsed).toBe(1);
+    expect(s.tokens).toBe(3);
+    // trap hint also counts
+    s = reducer(s, { type: "open-node", nodeId: "tea-shop" });
+    s = reducer(s, { type: "hint" });
+    expect(s.hintsUsed).toBe(2);
+  });
+  it("old saves without hintsUsed fall back to 3 - tokens", () => {
+    store.clear();
+    store.set(SAVE_KEY, JSON.stringify({ started: true, team: "T", tokens: 1, fsRoots: desktopNodes }));
+    expect(load().hintsUsed).toBe(2);
+  });
+});
+
+describe("past runs", () => {
+  const run = (id: number) => ({
+    id, team: "T", timeMs: 1000, hintsUsed: 0, wrongPasswords: 0,
+    trapsCleared: [] as string[], prize: "passed" as const, at: id,
+  });
+  it("appends, dedupes by id, caps at 30, tolerates corrupt data", () => {
+    clearRuns();
+    expect(loadRuns()).toEqual([]);
+    recordRun(run(1));
+    recordRun(run(2));
+    recordRun(run(1)); // dedupe
+    expect(loadRuns().map((r) => r.id)).toEqual([2, 1]);
+    for (let i = 10; i < 50; i++) recordRun(run(i));
+    expect(loadRuns().length).toBe(30);
+    store.set("hajurama-box-runs-v1", "{not json");
+    expect(loadRuns()).toEqual([]);
+    clearRuns();
+    expect(loadRuns()).toEqual([]);
+  });
+});
+
+describe("replay", () => {
+  it("keeps the team, resets progress, skips coach, keeps runs", () => {
+    store.clear();
+    let s: State = initialState();
+    s = reducer(s, { type: "start", team: "Peepal" });
+    s = reducer(s, { type: "hint" });
+    s = reducer(s, { type: "unlock", nodeId: "box" });
+    s = reducer(s, { type: "prize", result: "passed" });
+    const r = reducer(s, { type: "replay" });
+    expect(r.team).toBe("Peepal");
+    expect(r.phase).toBe("game");
+    expect(r.started).toBe(true);
+    expect(r.finished).toBe(false);
+    expect(r.finishedMs).toBeNull();
+    expect(r.prizeResult).toBeNull();
+    expect(r.coachStep).toBe(3);
+    expect(r.hintsUsed).toBe(0);
+    expect(r.milestones).toEqual({});
+    // runs key is untouched by the reducer, nothing to wipe
+    recordRun(run(99));
+    expect(loadRuns().length).toBe(1);
+  });
+  function run(id: number) {
+    return { id, team: "Peepal", timeMs: 1, hintsUsed: 0, wrongPasswords: 0, trapsCleared: [], prize: "passed" as const, at: id };
+  }
+});
+
 describe("focus no-op (#10)", () => {
   it("focusing the already-active top window returns the same state", () => {
     let s: State = initialState();
@@ -170,7 +267,7 @@ describe("focus no-op (#10)", () => {
     const w = s.windows[0];
     expect(s.activeWin).toBe(w.id);
     const s2 = reducer(s, { type: "focus", id: w.id });
-    expect(s2).toBe(s); // same reference — no re-render
+    expect(s2).toBe(s); // same reference, no re-render
     // a different (older, lower) window still raises
     s2; // noop
   });

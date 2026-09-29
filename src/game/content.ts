@@ -71,7 +71,7 @@ export function caesar(text: string, shift: number): string {
     .join("");
 }
 
-// Deterministic PRNG (mulberry32) — replaces python's random.Random seeds.
+// Deterministic PRNG (mulberry32), replaces python's random.Random seeds.
 export function rng(seed: number) {
   let a = seed >>> 0;
   return () => {
@@ -246,7 +246,7 @@ export const LEAF_LINES = [
   }
 }
 
-// leaf modified dates — deterministic, leaf 17 strictly newest
+// leaf modified dates: deterministic, leaf 17 strictly newest
 export function leafDate(i: number): string {
   if (i === MAGIC_LEAF) return MAGIC_TIME;
   const r = rng(1000 + i * 37);
@@ -327,7 +327,7 @@ export function leafDate(i: number): string {
   defDoc("last-page", d.done());
 }
 
-// Tea Shop PRIZE — with real input fields
+// Tea Shop PRIZE, with real input fields
 {
   const d = new DocBuilder();
   d.title("CONGRATULATIONS!!!", COLORS.red);
@@ -577,7 +577,7 @@ export const boxRoot: FSNode = f("box-root", B, "folder", "Desktop", {
   ],
 });
 
-// last page — lives in the Recycle Bin until restored
+// last page: lives in the Recycle Bin until restored
 export const lastPageNode: FSNode = doc("last-page", "last page", "Recycle Bin", {
   modified: "2026-09-19T16:15:00",
   deleted: true,
@@ -654,7 +654,7 @@ export const MILESTONES = [
 
 export type Milestone = (typeof MILESTONES)[number];
 
-// hint texts — level 1, level 2 (from teacher_guide hints table, same voice)
+// hint texts: level 1, level 2 (from teacher_guide hints table, same voice)
 export const HINTS: Record<Milestone, [string, string]> = {
   openedStart: [
     "Start where every story starts: the first letter.",

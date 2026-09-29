@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useMeta, useWindows, useActions, elapsed } from "../game/state";
-import { fmtTime } from "../game/logic";
+import { fmtTime, clearedTraps } from "../game/logic";
+import { loadRuns } from "../game/runs";
 import {
   ListBullets, FolderOpen, Question, ArrowClockwise, Calculator as CalcIcon,
   Clock,
 } from "@phosphor-icons/react";
 
-// ticking text isolated in its own component — updates a text node, no re-render elsewhere
+// ticking text updates a text node directly so nothing else re-renders
 function Timer() {
   const state = useMeta();
   const ref = useRef<HTMLSpanElement>(null);
@@ -43,6 +44,8 @@ export default function Taskbar() {
   const { windows } = useWindows();
   const { dispatch, openNode } = useActions();
   const [menu, setMenu] = useState(false);
+  // only mention traps once this computer has a finished run
+  const hasRuns = loadRuns().length > 0;
 
   const openWindows = [...windows].sort((a, b) => a.id - b.id);
 
@@ -76,6 +79,11 @@ export default function Taskbar() {
           >
             <Question size={14} /> Ask Hajurama <span className="n">{state.tokens}</span>
           </button>
+          {hasRuns && state.started && !state.finished && (
+            <span className="hint-btn trap-chip" title="Traps cleared so far">
+              Traps {clearedTraps(state).length}/4
+            </span>
+          )}
           <span title="Elapsed"><Timer /></span>
           <Clock size={13} />
           <ClockText />
