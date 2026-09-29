@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   caesar, checkPassword, PRAYER_TEXT, PRAYER_MESSAGE, boxRoot, desktopNodes,
   lastPageNode, findNode, TRAP_ROOTS,
@@ -8,7 +8,7 @@ import {
   clearedTraps, trapsFound, score, fmtTime,
 } from "../src/game/logic";
 import { loadRuns, recordRun, clearRuns } from "../src/game/runs";
-import { reducer, elapsed, initialState, load, persisted, SAVE_KEY, State } from "../src/game/state";
+import { reducer, elapsed, initialState, load, persisted, SAVE_KEY, SEEN_KEY, State } from "../src/game/state";
 import {
   desktopNodes2, boxRoot2, ticketDate, MAGIC_TICKET,
   FIRST_CLUE2, FINAL_WORD2, FLAGS_TEXT, FLAGS_MESSAGE, GUMBA_END, TRAP_HINT2,
@@ -373,6 +373,88 @@ describe("level 2 content", () => {
     expect(clearedTraps(s)).toEqual(["tea-shop", "water-tap"]);
     expect(levelContent(2).trapHint).toBe(TRAP_HINT2);
     expect(levelContent(2).trapRoots).toEqual(levelContent(1).trapRoots);
+  });
+});
+
+describe("timer pause and stale saves", () => {
+  it("hidden time is not counted", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_000_000);
+      let s: State = initialState();
+      s = reducer(s, { type: "start", team: "T" });
+      vi.setSystemTime(1_010_000); // 10 s visible
+      s = reducer(s, { type: "pause" });
+      expect(s.accumMs).toBe(10000);
+      expect(s.paused).toBe(true);
+      vi.setSystemTime(1_010_000 + 10 * 60 * 1000); // 10 min hidden
+      expect(elapsed(s)).toBe(10000); // no ticking while paused
+      s = reducer(s, { type: "resume" });
+      vi.setSystemTime(1_613_000);
+      expect(elapsed(s)).toBe(13000); // the hidden 10 min are missing, right
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it("a 4h-old save folds only up to the heartbeat and lands", () => {
+    store.clear();
+    const now = Date.now();
+    store.set(SAVE_KEY, JSON.stringify({
+      started: true, team: "T", level: 1, fsRoots: desktopNodes,
+      startTs: now - 4 * 3600_000, accumMs: 0, tokens: 3,
+    }));
+    store.set(SEEN_KEY, String(now - 4 * 3600_000 + 5000)); // seen 5s after start
+    const s = load();
+    expect(s.phase).toBe("landing"); // stale: resume offered, not auto-resumed
+    expect(s.accumMs).toBe(5000);
+    expect(elapsed(s)).toBeLessThan(15000); // ~5s plus a breath
+    expect(s.started).toBe(true); // resume is possible
+  });
+  it("a fresh save (heartbeat under 10 min) resumes into the game", () => {
+    store.clear();
+    const now = Date.now();
+    store.set(SAVE_KEY, JSON.stringify({
+      started: true, team: "T", level: 1, fsRoots: desktopNodes,
+      startTs: now - 8000, accumMs: 2000, tokens: 3,
+    }));
+    store.set(SEEN_KEY, String(now));
+    const s = load();
+    expect(s.phase).toBe("game");
+    expect(s.accumMs).toBe(2000 + 8000);
+    expect(elapsed(s)).toBeGreaterThanOrEqual(10000);
+  });
+  it("a missing heartbeat folds nothing and lands", () => {
+    store.clear();
+    const now = Date.now();
+    store.set(SAVE_KEY, JSON.stringify({
+      started: true, team: "T", fsRoots: desktopNodes,
+      startTs: now - 60_000, accumMs: 1000, tokens: 3,
+    }));
+    const s = load();
+    expect(s.accumMs).toBe(1000); // no heartbeat, nothing folded
+    expect(s.phase).toBe("landing");
+  });
+  it("an old save without the new fields loads safely", () => {
+    store.clear();
+    store.set(SAVE_KEY, JSON.stringify({ started: true, team: "T", fsRoots: desktopNodes }));
+    const s = load();
+    expect(s.paused).toBe(false);
+    expect(s.level).toBe(1);
+    expect(s.phase).toBe("landing");
+  });
+  it("Start the hunt on the landing replaces a stale save", () => {
+    store.clear();
+    const now = Date.now();
+    store.set(SAVE_KEY, JSON.stringify({
+      started: true, team: "Old", level: 1, fsRoots: desktopNodes,
+      startTs: now - 4 * 3600_000, accumMs: 999, tokens: 3,
+    }));
+    let s = load();
+    s = reducer(s, { type: "start", team: "New", level: 1 });
+    expect(s.phase).toBe("game");
+    expect(s.accumMs).toBe(0);
+    expect(s.team).toBe("New");
+    expect(s.milestones).toEqual({});
   });
 });
 

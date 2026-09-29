@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMeta, useActions } from "../game/state";
+import { useMeta, useActions, elapsed } from "../game/state";
+import { fmtTime } from "../game/logic";
 import { ArrowRight } from "@phosphor-icons/react";
 import { LEVELS } from "../game/levels";
 import { loadRuns } from "../game/runs";
@@ -101,8 +102,8 @@ export default function Landing() {
               <span className="arrow"><ArrowRight size={15} weight="bold" /></span>
             </button>
             {hasSave && (
-              <button className="btn-ghost" onClick={() => dispatch({ type: "start", team })}>
-                Resume game
+              <button className="btn-ghost" onClick={() => dispatch({ type: "resume-game" })}>
+                {`Resume Level ${state.level} · ${state.team || "(no name)"} · ${fmtTime(elapsed(state))}`}
               </button>
             )}
           </div>

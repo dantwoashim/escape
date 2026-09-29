@@ -418,6 +418,40 @@ test("hint button costs tokens and shows text; reload resumes progress", async (
   await expect(page.locator(".hint-card")).toContainText("Chautari");
 });
 
+test("stale save lands with a resume option, timer does not count closed hours", async ({ page }) => {
+  await startGame(page);
+  await page.waitForTimeout(600);
+  await page.evaluate(() => {
+    // freeze heartbeat writes so pagehide doesn't stamp a fresh one on the way out
+    const real = localStorage.setItem.bind(localStorage);
+    (localStorage as unknown as { setItem: (k: string, v: string) => void }).setItem =
+      (k, v) => { if (k !== "hajurama-box-seen-v1") real(k, v); };
+    const s = JSON.parse(localStorage.getItem("hajurama-box-save-v2")!);
+    s.startTs = Date.now() - 4 * 3600_000;
+    real("hajurama-box-save-v2", JSON.stringify(s));
+    real("hajurama-box-seen-v1", String(s.startTs + 5000));
+  });
+  await page.reload();
+  await expect(page.locator(".landing")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Resume Level 1/ })).toBeVisible();
+  await page.getByRole("button", { name: /Resume Level 1/ }).click();
+  await expect(page.locator(".taskbar")).toBeVisible();
+  const t = await page.locator(".timer").textContent();
+  expect(t!.startsWith("00:0")).toBe(true); // under a minute, not 4 hours
+});
+
+test("a quick reload still auto-resumes mid-game", async ({ page }) => {
+  await startGame(page);
+  await openBox(page);
+  await page.waitForTimeout(2500); // let the heartbeat land
+  await page.reload();
+  const coach = page.locator(".coach");
+  if (await coach.count()) await coach.locator(".skip").click();
+  await expect(page.locator(".taskbar")).toBeVisible();
+  const t = await page.locator(".timer").textContent();
+  expect(parseInt(t!.split(":")[0])).toBeLessThan(2);
+});
+
 test("teacher panel via hash", async ({ page }) => {
   await page.goto("/#teacher");
   await page.fill("#team", "T");

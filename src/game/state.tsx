@@ -17,6 +17,8 @@ import { levelContent } from "./levels";
 import { nextMilestone, pathIsTrap, idsTo, restoreNode } from "./logic";
 
 export const SAVE_KEY = "hajurama-box-save-v2";
+export const SEEN_KEY = "hajurama-box-seen-v1";
+const STALE_MS = 10 * 60 * 1000; // older than this, a run goes back to the landing
 const REDUCED = typeof window !== "undefined" &&
   window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -53,6 +55,7 @@ export interface Persisted {
   coachStep: number;
   startTs: number;
   accumMs: number;
+  paused: boolean; // true while the tab is hidden
   tokens: number;
   hintsUsed: number; // tokens spent, teacher grants don't lower it
   hintLevels: Partial<Record<Milestone, number>>;
@@ -99,6 +102,7 @@ function freshPersisted(team = "", level: 1 | 2 = 1): Persisted {
     coachStep: 0,
     startTs: Date.now(),
     accumMs: 0,
+    paused: false,
     tokens: 3,
     hintsUsed: 0,
     hintLevels: {},
@@ -136,11 +140,31 @@ export function load(): State {
     if (!raw) return initial;
     const p = JSON.parse(raw) as Persisted;
     if (!p || !Array.isArray(p.fsRoots)) return initial;
+    const now = Date.now();
+    const seen = Number(localStorage.getItem(SEEN_KEY)) || 0;
+    let phase: State["phase"] = p.started ? "game" : "landing";
+    let accumMs = p.accumMs ?? 0;
+    let startTs = p.startTs ?? now;
+    let paused = p.paused ?? false;
+    if (p.started && !p.finished) {
+      if (!paused) {
+        // closed-tab hours do not count: fold only up to the last heartbeat
+        const lastSeen = Math.min(seen, now);
+        if (seen && lastSeen > startTs) accumMs += lastSeen - startTs;
+      }
+      startTs = now;
+      paused = false;
+      // a quick refresh resumes; a stale run goes back to the landing
+      phase = seen && now - seen <= STALE_MS ? "game" : "landing";
+    }
     return {
       ...initial,
       ...p,
       level: p.level ?? 1, // saves from before levels existed
-      phase: p.started ? "game" : "landing",
+      accumMs,
+      startTs,
+      paused,
+      phase,
       windows: [],
       zTop: 1,
       activeWin: null,
@@ -157,21 +181,23 @@ export function load(): State {
 
 export function persisted(s: State): Persisted {
   const {
-    level, team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintsUsed, hintLevels,
+    level, team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, paused, tokens, hintsUsed, hintLevels,
     milestones, skills, wrongPasswords, trapsVisited, unlocked, fsRoots,
     docEdits, design, revealFlags,
   } = s;
   return {
-    level, team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, tokens, hintsUsed, hintLevels,
+    level, team, started, finished, finishedMs, prizeResult, coachStep, startTs, accumMs, paused, tokens, hintsUsed, hintLevels,
     milestones, skills, wrongPasswords, trapsVisited, unlocked, fsRoots,
     docEdits, design, revealFlags,
   };
 }
 
 // elapsed milliseconds: frozen once finished
-export function elapsed(state: Pick<State, "finishedMs" | "accumMs" | "started" | "startTs">): number {
+export function elapsed(
+  state: Pick<State, "finishedMs" | "accumMs" | "started" | "startTs" | "paused">,
+): number {
   if (state.finishedMs != null) return state.finishedMs;
-  return state.accumMs + (state.started ? Date.now() - state.startTs : 0);
+  return state.accumMs + (state.started && !state.paused ? Date.now() - state.startTs : 0);
 }
 
 // ---------------------------------------------------------------- actions
@@ -201,6 +227,9 @@ export type Action =
   | { type: "design"; els: DesignEl[] }
   | { type: "reveal"; key: string }
   | { type: "toast"; text: string | null }
+  | { type: "pause" }
+  | { type: "resume" }
+  | { type: "resume-game" }
   | { type: "new-game" }
   | { type: "replay" }
   | { type: "finale" }
@@ -294,6 +323,19 @@ function nodeOpenEffects(state: State, node: FSNode): State {
 export function reducer(state: State, a: Action): State {
   switch (a.type) {
     case "start": {
+      // "Start the hunt" while an old run sits on the landing = a fresh run,
+      // it replaces the stale save (Resume is the only way back in)
+      const wantLevel = a.level ?? state.level;
+      if (state.started && state.phase === "landing") {
+        return {
+          ...freshPersisted(a.team || state.team, wantLevel),
+          phase: "game",
+          started: true,
+          startTs: Date.now(),
+          windows: [], zTop: 1, activeWin: null,
+          hintMessage: null, toast: null, finale: false, teacher: state.teacher,
+        };
+      }
       // switching levels means a fresh run on that level's tree
       const base = a.level && a.level !== state.level
         ? { ...freshPersisted(a.team || state.team, a.level), phase: state.phase, windows: state.windows, zTop: state.zTop, activeWin: state.activeWin, hintMessage: state.hintMessage, toast: state.toast, finale: state.finale, teacher: state.teacher }
@@ -301,9 +343,35 @@ export function reducer(state: State, a: Action): State {
       return {
         ...base, phase: "game", started: true,
         team: a.team || base.team,
-        startTs: base.started ? base.startTs : Date.now(),
+        startTs: base.started && !base.paused ? base.startTs : Date.now(),
+        paused: false,
         finale: base.finished ? base.finale : false,
       };
+    }
+    case "resume-game": {
+      // Resume button on the landing: same run, clock restarts from accumMs
+      return {
+        ...state,
+        phase: "game",
+        started: true,
+        startTs: Date.now(),
+        paused: false,
+        finale: state.finished ? state.finale : false,
+      };
+    }
+    case "pause": {
+      if (!state.started || state.finished || state.paused) return state;
+      const now = Date.now();
+      return {
+        ...state,
+        accumMs: state.accumMs + Math.max(0, now - state.startTs),
+        startTs: now,
+        paused: true,
+      };
+    }
+    case "resume": {
+      if (!state.paused) return state;
+      return { ...state, startTs: Date.now(), paused: false };
     }
     case "start-level": {
       // "Play Level 2" from the finale: same team, straight to the desktop
@@ -562,6 +630,30 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // heartbeat + pause/resume so closed-tab hours never count
+  useEffect(() => {
+    const beat = () => {
+      const s = stateRef.current;
+      if (s.started && !s.finished) {
+        try { localStorage.setItem(SEEN_KEY, String(Date.now())); } catch { /* ignore */ }
+      }
+    };
+    beat();
+    const t = setInterval(beat, 2000);
+    const onVis = () => dispatch({ type: document.hidden ? "pause" : "resume" });
+    const onHide = () => {
+      beat();
+      dispatch({ type: "pause" });
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", onHide);
+    };
+  }, []);
+
   useEffect(() => {
     cancelAnimationFrame(saveRef.current);
     saveRef.current = requestAnimationFrame(() => {
@@ -598,7 +690,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     state.level, state.team, state.started, state.finished, state.finishedMs, state.prizeResult, state.coachStep,
-    state.startTs, state.accumMs, state.tokens, state.hintsUsed, state.hintLevels, state.milestones,
+    state.startTs, state.accumMs, state.paused, state.tokens, state.hintsUsed, state.hintLevels, state.milestones,
     state.skills, state.wrongPasswords, state.trapsVisited, state.unlocked,
     state.fsRoots, state.docEdits, state.design, state.revealFlags, state.phase,
     state.activeWin, state.hintMessage, state.toast, state.finale, state.teacher,
