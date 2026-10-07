@@ -108,6 +108,32 @@ test("level 1 full playthrough on a phone", async ({ page }) => {
   await page.locator(".finale").waitFor({ state: "visible" });
 });
 
+test("hidden runs match the page background and body text is 15px", async ({ page }) => {
+  await page.goto("/");
+  await page.fill("#team", "M");
+  await page.getByText("Start the hunt").tap();
+  await skipCoach(page);
+  await tap(page, '[data-desk="box-root"]');
+  await tap(page, '.window:visible [data-file="start-here"]');
+  await expect(page.locator(".window:visible .word")).toBeVisible();
+  const m = await page.evaluate(() => {
+    const pageEl = [...document.querySelectorAll<HTMLElement>(".window .page")]
+      .find((p) => p.offsetParent !== null)!;
+    const runs = [...pageEl.querySelectorAll<HTMLElement>("[data-run]")];
+    const hidden = runs.find((s) => s.textContent?.includes("Secret code"));
+    return {
+      bg: getComputedStyle(pageEl).backgroundColor,
+      hiddenColor: hidden ? getComputedStyle(hidden).color : null,
+      sizes: [...new Set(runs.map((s) => getComputedStyle(s).fontSize))],
+    };
+  });
+  // hidden text is exactly the page background: invisible by construction
+  expect(m.hiddenColor).toBe("rgb(255, 253, 248)");
+  expect(m.hiddenColor).toBe(m.bg);
+  // every run lands in the two native bands (15px body, 19px display)
+  expect(m.sizes.every((s) => s === "15px" || s === "19px")).toBe(true);
+});
+
 test("browser back steps through the shell and never leaves", async ({ page }) => {
   await page.goto("/");
   await page.fill("#team", "M");

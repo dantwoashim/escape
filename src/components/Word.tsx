@@ -226,6 +226,27 @@ export default function Word({ win }: Props) {
   return (
     <div className="word" data-word>
       <div className="word-toolbar">
+        {/* mobile: the puzzle-critical actions come first, no scrolling needed */}
+        {mobile && (
+          <>
+            <button className="wbtn" onClick={selectAll}>
+              <SelectionAll size={15} /> Select all
+            </button>
+            <button className={"wbtn" + (findOpen ? " on" : "")} onClick={() => { setFindOpen(!findOpen); setReplaceOpen(false); }}>
+              <MagnifyingGlass size={14} /> Find
+            </button>
+            <button className={"wbtn" + (replaceOpen ? " on" : "")} onClick={() => { setReplaceOpen(!replaceOpen); setFindOpen(false); }}>
+              <ArrowCounterClockwise size={14} /> Replace
+            </button>
+            <button className="wbtn" title="Zoom out" onClick={() => { setZoom((z) => Math.max(10, z - 25)); dispatch({ type: "skill", k: "zoom" }); }}>
+              Zoom -
+            </button>
+            <button className="wbtn" title="Zoom in" onClick={() => { setZoom((z) => Math.min(500, z + 25)); dispatch({ type: "skill", k: "zoom" }); }}>
+              Zoom +
+            </button>
+            <span className="wsep" />
+          </>
+        )}
         <button className="wbtn" title="Decrease font size" onClick={() => { bumpSize(-2); }}>
           <Minus size={13} />
         </button>
@@ -267,23 +288,16 @@ export default function Word({ win }: Props) {
           <TextB size={15} weight="bold" />
         </button>
         <span className="wsep" />
-        <button className="wbtn" onClick={selectAll}>
-          <SelectionAll size={15} /> Select all
-        </button>
-        <button className={"wbtn" + (findOpen ? " on" : "")} onClick={() => { setFindOpen(!findOpen); setReplaceOpen(false); }}>
-          <MagnifyingGlass size={14} /> Find
-        </button>
-        <button className={"wbtn" + (replaceOpen ? " on" : "")} onClick={() => { setReplaceOpen(!replaceOpen); setFindOpen(false); }}>
-          <ArrowCounterClockwise size={14} /> Replace
-        </button>
-        {mobile && (
+        {!mobile && (
           <>
-            <span className="wsep" />
-            <button className="wbtn" title="Zoom out" onClick={() => { setZoom((z) => Math.max(10, z - 25)); dispatch({ type: "skill", k: "zoom" }); }}>
-              Zoom -
+            <button className="wbtn" onClick={selectAll}>
+              <SelectionAll size={15} /> Select all
             </button>
-            <button className="wbtn" title="Zoom in" onClick={() => { setZoom((z) => Math.min(500, z + 25)); dispatch({ type: "skill", k: "zoom" }); }}>
-              Zoom +
+            <button className={"wbtn" + (findOpen ? " on" : "")} onClick={() => { setFindOpen(!findOpen); setReplaceOpen(false); }}>
+              <MagnifyingGlass size={14} /> Find
+            </button>
+            <button className={"wbtn" + (replaceOpen ? " on" : "")} onClick={() => { setReplaceOpen(!replaceOpen); setFindOpen(false); }}>
+              <ArrowCounterClockwise size={14} /> Replace
             </button>
           </>
         )}
@@ -348,10 +362,10 @@ export default function Word({ win }: Props) {
 }
 
 function RunSpan({ run, runKey, findQ, mobile }: { run: Run; runKey: string; findQ: string; mobile: boolean }) {
-  // mobile uses a native-feeling two-band scale: body 16px, display 20px.
+  // mobile uses a native-feeling two-band scale: body 15px, display 19px.
   // genuinely tiny runs (the hidden-font clue) must stay tiny.
   const size =
-    mobile && run.size > 8 ? (run.size > 20 ? "20px" : "16px") : `${run.size}pt`;
+    mobile && run.size > 8 ? (run.size > 20 ? "19px" : "15px") : `${run.size}pt`;
   const style: React.CSSProperties = {
     fontSize: size,
     color: run.color,

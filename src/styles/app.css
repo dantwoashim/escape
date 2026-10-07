@@ -258,7 +258,8 @@ table.details .nm svg { width: 18px; height: 18px; flex: none; }
 .swatch.on { outline: 2px solid var(--accent); outline-offset: 1px; }
 .word-scroll { flex: 1; overflow: auto; padding: 26px 20px 40px; }
 .page {
-  background: #FFFDF8; width: 640px; min-height: 880px; margin: 0 auto 22px;
+  --page-bg: #FFFDF8;
+  background: var(--page-bg); width: 640px; min-height: 880px; margin: 0 auto 22px;
   padding: 64px 60px; box-shadow: var(--shadow-sm); border: 1px solid var(--line);
   transform-origin: top center;
 }

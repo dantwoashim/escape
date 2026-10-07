@@ -58,7 +58,9 @@ export const COLORS = {
   brown: "#6B3E1E",
   red: "#A33A2C",
   green: "#4F6B52",
-  white: "#FFFFFF",
+  // "white" = the page background, so hidden runs are invisible on every
+  // device (the mobile page tint used to betray them faintly)
+  white: "var(--page-bg)",
 } as const;
 
 export function caesar(text: string, shift: number): string {
