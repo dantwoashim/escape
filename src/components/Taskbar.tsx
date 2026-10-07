@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMeta, useWindows, useActions, elapsed } from "../game/state";
 import { fmtTime, clearedTraps } from "../game/logic";
 import { loadRuns } from "../game/runs";
+import { bonusHint } from "../game/bonus";
 import {
   ListBullets, FolderOpen, Question, ArrowClockwise, Calculator as CalcIcon,
   Clock, House,
@@ -76,6 +77,7 @@ export default function Taskbar() {
             onClick={() => dispatch({ type: "hint" })}
           >
             <Question size={14} /> <span className="n">{state.tokens}</span>
+            {bonusHint() && state.hintsUsed === 0 && <span>· free</span>}
           </button>
           {hasRuns && state.started && !state.finished && (
             <span className="hint-btn trap-chip" title="Traps cleared so far">
@@ -117,6 +119,7 @@ export default function Taskbar() {
             onClick={() => dispatch({ type: "hint" })}
           >
             <Question size={14} /> Ask Hajurama <span className="n">{state.tokens}</span>
+            {bonusHint() && state.hintsUsed === 0 && <span>· free</span>}
           </button>
           {hasRuns && state.started && !state.finished && (
             <span className="hint-btn trap-chip" title="Traps cleared so far">

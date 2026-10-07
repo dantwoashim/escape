@@ -7,6 +7,7 @@ import {
   sortNodes, restoreNode, replaceAllCount, clueRevealed, nextMilestone, pathIsTrap, idsTo,
   clearedTraps, trapsFound, score, fmtTime,
 } from "../src/game/logic";
+import { checkWord } from "../src/game/bonus";
 import { loadRuns, recordRun, clearRuns } from "../src/game/runs";
 import { reducer, elapsed, initialState, load, persisted, SAVE_KEY, SEEN_KEY, State } from "../src/game/state";
 import {
@@ -176,6 +177,18 @@ describe("score and trap counting", () => {
     expect(score(600000, 2, 1)).toBe(750000);
     expect(fmtTime(score(600000, 2, 1))).toBe("12:30");
     expect(score(600000, 0, 0)).toBe(600000);
+  });
+  it("bonus word makes the first hint free", () => {
+    expect(score(600000, 0, 0, true)).toBe(600000);
+    expect(score(600000, 1, 0, true)).toBe(600000);
+    expect(score(600000, 3, 0, true)).toBe(720000);
+    expect(score(600000, 1, 1, true)).toBe(630000);
+  });
+  it("checkWord accepts the hidden word spellings", () => {
+    for (const w of ["bistarai", " Bistarai ", "BISTARAI", "bistaarai", "बिस्तारै"]) {
+      expect(checkWord(w)).toBe(true);
+    }
+    expect(checkWord("khukuri")).toBe(false);
   });
   it("clearedTraps counts only trap endings", () => {
     const base = { revealFlags: {} as Record<string, boolean>, unlocked: [] as string[] };

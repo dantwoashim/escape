@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMeta, useActions, elapsed } from "../game/state";
 import { fmtTime } from "../game/logic";
+import { bonusHint, checkWord, setBonusHint } from "../game/bonus";
 import { ArrowRight } from "@phosphor-icons/react";
 import { LEVELS } from "../game/levels";
 import { loadRuns } from "../game/runs";
@@ -47,6 +48,49 @@ function BoxArt() {
         <path d="M370 90 q70 -45 140 -5" />
       </g>
     </svg>
+  );
+}
+
+// quiet gate for the word hidden in the film; a correct guess earns a free hint
+function WordGate() {
+  const [mode, setMode] = useState<"idle" | "ask" | "ok">(bonusHint() ? "ok" : "idle");
+  const [val, setVal] = useState("");
+  const [err, setErr] = useState(0);
+
+  if (mode === "ok") {
+    return <div className="word-done">Bistarai. Slowly, carefully. Your first hint is free.</div>;
+  }
+  if (mode === "idle") {
+    return (
+      <button className="word-link" onClick={() => setMode("ask")}>
+        Found Hajurama's word?
+      </button>
+    );
+  }
+  const check = () => {
+    if (checkWord(val)) {
+      setBonusHint();
+      setMode("ok");
+    } else {
+      setErr((n) => n + 1);
+    }
+  };
+  return (
+    <div className={"word-ask" + (err ? " shake" : "")} key={err}>
+      <input
+        className="word-input"
+        value={val}
+        placeholder="Hajurama's word"
+        autoComplete="off"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && check()}
+      />
+      <button className="btn-ghost word-check" onClick={check}>Check</button>
+      {err > 0 && <div className="word-err">Not that one. Watch again.</div>}
+    </div>
   );
 }
 
@@ -108,6 +152,7 @@ export default function Landing() {
             )}
           </div>
           <div className="meta-line">About 10 minutes · 2 or 3 players · play it on a computer</div>
+          <WordGate />
         </div>
         <div className="landing-art"><BoxArt /></div>
       </div>

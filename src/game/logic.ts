@@ -132,9 +132,11 @@ export function trapsFound(s: { trapsVisited: string[] }): string[] {
   return TRAP_ROOTS.filter((r) => found.has(r));
 }
 
-// score = time + 1 min per hint + 30 s per wrong password
-export function score(timeMs: number, hintsUsed: number, wrongPasswords: number): number {
-  return timeMs + 60000 * hintsUsed + 30000 * wrongPasswords;
+// score = time + 1 min per hint + 30 s per wrong password.
+// with the bonus word, the first hint is free.
+export function score(timeMs: number, hintsUsed: number, wrongPasswords: number, bonus = false): number {
+  const h = bonus ? Math.max(0, hintsUsed - 1) : hintsUsed;
+  return timeMs + 60000 * h + 30000 * wrongPasswords;
 }
 
 export function fmtTime(ms: number): string {

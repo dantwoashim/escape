@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, RefObject } from "react";
 import { useMeta, useActions, elapsed } from "../game/state";
 import { fmtTime, clearedTraps, score } from "../game/logic";
+import { bonusHint } from "../game/bonus";
 import { SKILLS } from "../game/content";
 import { levelContent } from "../game/levels";
 import { recordRun, loadRuns } from "../game/runs";
@@ -72,10 +73,12 @@ export default function Finale() {
     .map((k) => (k === "scamRefuse" ? prank.skillLabel : SKILLS[k as keyof typeof SKILLS]));
   const traps = clearedTraps(state);
   const timeMs = elapsed(state);
-  const total = score(timeMs, state.hintsUsed, state.wrongPasswords);
+  const bonus = bonusHint();
+  const total = score(timeMs, state.hintsUsed, state.wrongPasswords, bonus);
+  const effHints = bonus ? Math.max(0, state.hintsUsed - 1) : state.hintsUsed;
   const parts = [
     `${fmtTime(timeMs)} time`,
-    state.hintsUsed ? `${state.hintsUsed} hint${state.hintsUsed === 1 ? "" : "s"} (${fmtTime(60000 * state.hintsUsed)})` : "",
+    effHints ? `${effHints} hint${effHints === 1 ? "" : "s"} (${fmtTime(60000 * effHints)})` : "",
     state.wrongPasswords ? `${state.wrongPasswords} wrong password${state.wrongPasswords === 1 ? "" : "s"} (${fmtTime(30000 * state.wrongPasswords)})` : "",
   ].filter(Boolean);
   const scoreExplain =
@@ -191,6 +194,9 @@ export default function Finale() {
                 <div className="score-v">{fmtTime(total)}</div>
                 <div className="score-k">Score</div>
                 <div className="score-x">{scoreExplain}</div>
+                {bonus && state.hintsUsed >= 1 && (
+                  <div className="score-x bonus-note">First hint free (Hajurama's word)</div>
+                )}
               </div>
               <div className="stats-grid">
                 <div className="stat"><div className="v">{fmtTime(timeMs)}</div><div className="k">Time</div></div>
@@ -230,7 +236,7 @@ export default function Finale() {
                               {r.id === state.startTs && <span className="this-run"> (this run)</span>}
                             </td>
                             <td>{r.level ?? 1}</td>
-                            <td className="mono">{fmtTime(score(r.timeMs, r.hintsUsed, r.wrongPasswords))}</td>
+                            <td className="mono">{fmtTime(score(r.timeMs, r.hintsUsed, r.wrongPasswords, bonus))}</td>
                             <td title={names.length ? names.join(", ") : "none yet"}>
                               {names.length} of 3
                             </td>
