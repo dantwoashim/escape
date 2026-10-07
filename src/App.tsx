@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { GameProvider, useMeta, useWindows, useActions } from "./game/state";
+import { useIsMobile } from "./game/useIsMobile";
 import Landing from "./components/Landing";
 import Desktop from "./components/Desktop";
 import Taskbar from "./components/Taskbar";
@@ -12,6 +13,15 @@ function Shell() {
   const state = useMeta();
   const { windows } = useWindows();
   const { dispatch } = useActions();
+  const mobile = useIsMobile();
+
+  // no browser context menu on touch; long-press opens our action sheet
+  useEffect(() => {
+    if (!mobile) return;
+    const stop = (e: Event) => e.preventDefault();
+    document.addEventListener("contextmenu", stop);
+    return () => document.removeEventListener("contextmenu", stop);
+  }, [mobile]);
 
   // teacher panel: #teacher hash or Ctrl+Alt+H
   useEffect(() => {

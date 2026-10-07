@@ -63,19 +63,12 @@ button { font-family: inherit; color: inherit; }
 .meta-line { margin-top: 26px; font-size: 13px; color: var(--ink-2); letter-spacing: 0.02em; }
 .landing-art { display: grid; place-items: center; }
 .landing-art svg { width: min(38vw, 520px); height: auto; }
-.too-small {
-  min-height: 100dvh; display: none; place-items: center; text-align: center; padding: 24px;
-}
-@media (max-width: 899px) {
-  .landing { display: none; }
-  .too-small { display: grid; }
-}
 
 /* ---------- desktop ---------- */
 .desktop {
   position: fixed; inset: 0 0 48px 0; overflow: hidden;
 }
-.wallpaper { position: absolute; inset: 0; }
+.wallpaper { position: absolute; inset: 0; pointer-events: none; }
 .desk-icons {
   position: absolute; top: 24px; left: 24px; display: flex; flex-direction: column; gap: 18px;
 }
@@ -594,3 +587,167 @@ mark.hit { background: rgba(168,80,46,.3); color: var(--ink); border-radius: 2px
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
+
+/* ---------- mobile shell (phones/tablets) ---------- */
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+body { overscroll-behavior: none; }
+
+html.mobile .grain { display: none; }
+
+/* landing stacks, buttons get big enough to tap */
+html.mobile .landing {
+  grid-template-columns: 1fr; align-content: start; gap: 18px;
+  padding: 5vh 6vw 24px; overflow-y: auto;
+}
+html.mobile .landing h1 { font-size: 38px; }
+html.mobile .landing p.desc { font-size: 16px; margin-bottom: 22px; }
+html.mobile .landing-art { order: -1; }
+html.mobile .landing-art svg { width: min(56vw, 240px); }
+html.mobile .field input { width: 100%; font-size: 16px; min-height: 48px; }
+html.mobile .level-pick { flex-direction: column; }
+html.mobile .level-card { min-height: 52px; }
+html.mobile .btn-pill, html.mobile .btn-ghost {
+  width: 100%; min-height: 48px; margin: 0 0 10px; justify-content: center;
+}
+html.mobile .btn-pill { padding: 12px 22px; }
+
+/* one fullscreen app at a time */
+html.mobile .desktop { inset: 0 0 calc(56px + env(safe-area-inset-bottom)) 0; }
+html.mobile .desk-icons {
+  position: relative; display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 14px; padding: 20px 16px; align-content: start; overflow-y: auto; height: 100%;
+}
+html.mobile .desk-icon { width: auto; min-height: 96px; }
+html.mobile .desk-icon svg { width: 72px; height: 72px; }
+html.mobile .desk-icon .label { font-size: 13px; }
+
+html.mobile .window {
+  position: fixed; left: 0; top: 0; right: 0; bottom: calc(56px + env(safe-area-inset-bottom));
+  width: auto; height: auto; border-radius: 0; border: none; box-shadow: none;
+}
+html.mobile .m-appbar {
+  height: 52px; flex: none; display: flex; align-items: center; gap: 6px;
+  padding: 0 8px; border-bottom: 1px solid var(--line); background: var(--surface);
+}
+html.mobile .m-back, html.mobile .m-more {
+  width: 44px; height: 44px; border: none; border-radius: 8px; background: none;
+  display: grid; place-items: center; color: var(--ink); cursor: pointer;
+}
+html.mobile .m-back:active, html.mobile .m-more:active { background: var(--surface-2); }
+html.mobile .m-title {
+  flex: 1; text-align: center; font-size: 15px; font-weight: 600;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+html.mobile .m-more-spacer { width: 44px; flex: none; }
+
+/* bottom bar */
+html.mobile .taskbar {
+  height: calc(56px + env(safe-area-inset-bottom));
+  padding: 0 8px env(safe-area-inset-bottom);
+  background: var(--surface); backdrop-filter: none; box-shadow: none;
+}
+html.mobile .start-btn { display: none; }
+html.mobile .m-home {
+  width: 44px; height: 44px; flex: none; border: none; border-radius: 50%;
+  background: var(--ink); color: var(--surface); display: grid; place-items: center;
+}
+html.mobile .task-win { min-width: 44px; max-width: 120px; height: 40px; font-size: 12px; }
+html.mobile .hud { gap: 8px; font-size: 12px; }
+html.mobile .hint-btn { height: 40px; padding: 0 12px; }
+
+/* explorer: no tree, big tap targets, two-line detail rows */
+html.mobile .exp-tree { display: none; }
+html.mobile .exp-toolbar { flex-wrap: wrap; padding: 6px 8px; }
+html.mobile .nav-btn { display: none; }
+html.mobile .exp-toolbar > .nav-btn[aria-label="Sort"] { display: grid; }
+html.mobile .breadcrumb { min-height: 34px; }
+html.mobile .view-switch button { min-width: 44px; min-height: 36px; }
+html.mobile .icons-grid { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
+html.mobile .file-ico { width: 100%; min-height: 84px; }
+html.mobile .file-ico .label { font-size: 12.5px; }
+html.mobile table.details { display: none; }
+html.mobile .m-rows { padding: 8px; display: flex; flex-direction: column; }
+html.mobile .mrow {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px;
+  padding: 6px 10px; border: none; border-bottom: 1px solid var(--line);
+  background: none; text-align: left; font-size: 14px;
+  content-visibility: auto; contain-intrinsic-size: 52px;
+}
+html.mobile .mrow.sel { background: var(--accent-soft); }
+html.mobile .mrow:active { background: var(--surface-2); }
+html.mobile .mr-ic { width: 22px; flex: none; display: inline-flex; }
+html.mobile .mr-ic svg { width: 22px; height: 22px; }
+html.mobile .mr-txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+html.mobile .mr-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html.mobile .mr-meta { font-size: 11.5px; color: var(--ink-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* word on mobile: chunky toolbar, 16px inputs so iOS does not zoom */
+html.mobile .word-toolbar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
+html.mobile .wbtn { min-height: 40px; padding: 6px 12px; font-size: 13.5px; }
+html.mobile .swatch { width: 34px; height: 34px; }
+html.mobile .size-field { font-size: 16px; height: 40px; }
+html.mobile .fr-dialog { left: 8px; right: 8px; }
+html.mobile .fr-dialog input { font-size: 16px; min-height: 44px; }
+html.mobile .pw-dialog input { font-size: 16px; min-height: 48px; }
+html.mobile .word .page { width: auto; margin: 10px; min-height: 40vh; }
+html.mobile .word-status { padding: 6px 10px; }
+html.mobile .zoom-slider { display: none; }
+
+/* calculator fits 360px, keys are thumb-sized */
+html.mobile .calc { padding: 10px; }
+html.mobile .calc-key { min-height: 56px; font-size: 20px; }
+html.mobile .calc-display { padding: 16px 12px; }
+html.mobile .calc-display svg { height: 40px; }
+
+/* designer */
+html.mobile .dg-rail { display: none; }
+html.mobile .dg-toolbar { flex-wrap: wrap; }
+html.mobile .dg-toolbar .wbtn { min-height: 40px; }
+html.mobile .dg-stage { padding: 8px; }
+html.mobile .dg-el { touch-action: none; }
+
+/* action sheet */
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 2500; background: rgba(34, 30, 26, 0.28);
+  animation: fadein 140ms var(--ease);
+}
+.action-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 2501;
+  background: var(--surface); border-radius: 14px 14px 0 0;
+  padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+  animation: sheetup 160ms var(--ease);
+}
+@keyframes sheetup { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px;
+  padding: 0 14px; border: none; border-radius: 8px; background: none;
+  font-size: 16px; text-align: left; cursor: pointer;
+}
+.sheet-item:active { background: var(--surface-2); }
+.sheet-item.cancel { justify-content: center; font-weight: 600; color: var(--ink-2); margin-top: 4px; border-top: 1px solid var(--line); border-radius: 0; }
+
+/* coach, hints, toast fit the phone */
+html.mobile .coach { left: 12px !important; right: 12px !important; top: auto !important; bottom: 72px !important; max-width: none; }
+html.mobile .hint-card { left: 12px; right: 12px; width: auto; bottom: 72px; }
+html.mobile .toast { bottom: 72px; max-width: calc(100vw - 24px); white-space: normal; text-align: center; }
+
+/* finale stacks and may scroll */
+html.mobile .finale { overflow-y: auto; padding: 20px 14px calc(20px + env(safe-area-inset-bottom)); place-items: start center; }
+html.mobile .finale-card { max-height: none; max-width: 460px; }
+html.mobile .finale-cols { flex-direction: column; align-items: stretch; gap: 18px; width: 100%; }
+html.mobile .finale-left, html.mobile .finale-right { width: 100%; text-align: center; }
+html.mobile .finale-right { align-items: center; }
+html.mobile .stats-grid { grid-template-columns: repeat(2, 1fr); }
+html.mobile .stats-grid .stat:last-child { grid-column: 1 / -1; }
+html.mobile .skills-wrap { max-height: none; }
+html.mobile .runs-card { max-height: none; }
+html.mobile .finale-btns { flex-direction: column; align-items: stretch; }
+html.mobile .prize-card { width: 100%; }
+html.mobile .prize-card input { font-size: 16px; min-height: 48px; }
+
+/* teacher panel is a full-screen sheet on mobile */
+html.mobile .teacher {
+  inset: 0; width: auto; max-height: none; border-radius: 0; border: none;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+}
+html.mobile .teacher .btn { min-height: 44px; }

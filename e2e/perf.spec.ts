@@ -131,3 +131,5 @@ test("design element drag stays on the transform path", async ({ page }) => {
   console.log("designDrag", JSON.stringify(stats));
   expect(stats.long).toBeLessThanOrEqual(3);
 });
+
+

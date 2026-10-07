@@ -111,14 +111,6 @@ export default function Landing() {
         </div>
         <div className="landing-art"><BoxArt /></div>
       </div>
-      <div className="too-small">
-        <div>
-          <h2>Hajurama's Box needs a computer</h2>
-          <p style={{ color: "var(--ink-2)" }}>
-            Open this on a laptop or desktop. The whole game happens on a computer screen.
-          </p>
-        </div>
-      </div>
     </>
   );
 }

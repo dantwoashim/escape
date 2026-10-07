@@ -1,0 +1,14 @@
+{
+  "name": "Hajurama's Box",
+  "short_name": "Hajurama's Box",
+  "description": "A treasure hunt that teaches real computer skills, set in a Nepali village.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3EDE3",
+  "theme_color": "#F3EDE3",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

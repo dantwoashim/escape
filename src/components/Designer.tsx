@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useMeta, useActions, DesignEl, defaultDesign } from "../game/state";
 import { levelContent } from "../game/levels";
+import { useIsMobile } from "../game/useIsMobile";
 import { clueRevealed } from "../game/logic";
 import {
   Stack, TrashSimple, ArrowCounterClockwise, TextT, Shapes,
@@ -68,6 +69,7 @@ export default function Designer() {
   const state = useMeta();
   const { dispatch } = useActions();
   const els = state.design;
+  const mobile = useIsMobile();
   const [sel, setSel] = useState<string | null>(null);
   const [posMenu, setPosMenu] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -163,7 +165,12 @@ export default function Designer() {
   };
 
   return (
-    <div className="designer" onClick={() => { setSel(null); setPosMenu(false); }}>
+    <div className="designer" onClick={(e) => {
+      // taps on elements/toolbar must not clear the selection
+      if ((e.target as HTMLElement).closest(".dg-el")) return;
+      setSel(null);
+      setPosMenu(false);
+    }}>
       <div className="dg-rail">
         <button><Shapes size={20} />Elements</button>
         <button><TextT size={20} />Text</button>
@@ -177,6 +184,11 @@ export default function Designer() {
           <button className="wbtn" disabled={!sel} style={{ opacity: sel ? 1 : 0.45 }} onClick={del}>
             <TrashSimple size={14} /> Delete
           </button>
+          {mobile && (
+            <button className="wbtn" disabled={!sel} style={{ opacity: sel ? 1 : 0.45 }} onClick={() => reorder("back")}>
+              Send to back
+            </button>
+          )}
           <span style={{ flex: 1 }} />
           <button className="wbtn" onClick={() => { set(defaultDesign()); setSel(null); }}>
             <ArrowCounterClockwise size={14} /> Reset design

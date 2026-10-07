@@ -4,8 +4,9 @@ import { fmtTime, clearedTraps } from "../game/logic";
 import { loadRuns } from "../game/runs";
 import {
   ListBullets, FolderOpen, Question, ArrowClockwise, Calculator as CalcIcon,
-  Clock,
+  Clock, House,
 } from "@phosphor-icons/react";
+import { useIsMobile } from "../game/useIsMobile";
 
 // ticking text updates a text node directly so nothing else re-renders
 function Timer() {
@@ -44,10 +45,48 @@ export default function Taskbar() {
   const { windows } = useWindows();
   const { dispatch, openNode } = useActions();
   const [menu, setMenu] = useState(false);
+  const mobile = useIsMobile();
   // only mention traps once this computer has a finished run
   const hasRuns = loadRuns().length > 0;
 
   const openWindows = [...windows].sort((a, b) => a.id - b.id);
+
+  if (mobile) {
+    return (
+      <div className="taskbar m">
+        <button className="m-home" aria-label="Home" onClick={() => dispatch({ type: "min-all" })}>
+          <House size={20} />
+        </button>
+        <div className="task-wins">
+          {openWindows.map((w) => (
+            <button
+              key={w.id}
+              className={"task-win" + (state.activeWin === w.id && !w.minimized ? " active" : "")}
+              onClick={() => dispatch({ type: "focus", id: w.id })}
+            >
+              {w.title}
+            </button>
+          ))}
+        </div>
+        <div className="hud">
+          <button
+            className="hint-btn"
+            disabled={state.tokens <= 0}
+            title={state.tokens <= 0 ? "No hints left" : "Ask Hajurama for a hint"}
+            onClick={() => dispatch({ type: "hint" })}
+          >
+            <Question size={14} /> <span className="n">{state.tokens}</span>
+          </button>
+          {hasRuns && state.started && !state.finished && (
+            <span className="hint-btn trap-chip" title="Traps cleared so far">
+              {clearedTraps(state).length}/4
+            </span>
+          )}
+          <span title="Elapsed"><Timer /></span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

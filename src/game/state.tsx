@@ -213,6 +213,7 @@ export type Action =
   | { type: "focus"; id: number }
   | { type: "close"; id: number }
   | { type: "min"; id: number }
+  | { type: "min-all" }
   | { type: "max"; id: number }
   | { type: "move"; id: number; x: number; y: number }
   | { type: "unlock"; nodeId: string }
@@ -437,6 +438,13 @@ export function reducer(state: State, a: Action): State {
       const top = [...wins].sort((x, y) => y.z - x.z)[0];
       return { ...state, windows: wins, activeWin: top && !top.minimized ? top.id : null };
     }
+    case "min-all":
+      // mobile home button: everything tucked away, desktop shows through
+      return {
+        ...state,
+        windows: state.windows.map((w) => ({ ...w, minimized: true })),
+        activeWin: null,
+      };
     case "min":
       return {
         ...state,

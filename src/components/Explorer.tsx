@@ -4,8 +4,12 @@ import { useMeta, useActions, Win } from "../game/state";
 import { FSNode, desktopNodes, findNode, pathTo } from "../game/content";
 import { sortNodes, SortKey, fmtDate } from "../game/logic";
 import { nodeIcon, IconBin } from "./icons";
+import { useIsMobile } from "../game/useIsMobile";
+import { useLongPress } from "../game/useLongPress";
+import ActionSheet from "./ActionSheet";
 import {
   ArrowLeft, ArrowRight, ArrowUp, SquaresFour, List, CaretUp, CaretDown,
+  FolderOpen, Info, SortDescending,
 } from "@phosphor-icons/react";
 
 type View = "icons" | "details";
@@ -33,6 +37,8 @@ export default function Explorer({ win }: { win: Win }) {
   const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: "name", asc: true });
   const hist = useRef<{ back: string[][]; fwd: string[][] }>({ back: [], fwd: [] });
   const [ctx, setCtx] = useState<{ x: number; y: number; node: FSNode } | null>(null);
+  const [sortSheet, setSortSheet] = useState(false);
+  const mobile = useIsMobile();
 
   const folder = folderOf(win.path, state.fsRoots);
   const items = useMemo(
@@ -130,12 +136,30 @@ export default function Explorer({ win }: { win: Win }) {
 
   const onItemContext = (e: React.MouseEvent, n: FSNode) => {
     e.preventDefault();
+    if (mobile) return; // long-press handles it via the action sheet
     setSel(n.id);
     setCtx({ x: e.clientX, y: e.clientY, node: n });
   };
 
+  const itemSheet = (n: FSNode) => (
+    <ActionSheet
+      onClose={() => setCtx(null)}
+      items={[
+        { label: "Open", icon: <FolderOpen size={18} />, onClick: () => open(n) },
+        {
+          label: "Properties",
+          icon: <Info size={18} />,
+          onClick: () => {
+            dispatch({ type: "skill", k: "properties" });
+            dispatch({ type: "open-app", app: "properties", title: `${n.name} Properties`, nodeId: n.id });
+          },
+        },
+      ]}
+    />
+  );
+
   return (
-    <div className="explorer" onClick={() => setCtx(null)}>
+    <div className="explorer" onClick={() => { if (!mobile) setCtx(null); }}>
       <div className="exp-toolbar">
         <button className="nav-btn" aria-label="Back" disabled={!hist.current.back.length} onClick={goBack}>
           <ArrowLeft size={15} />
@@ -170,6 +194,11 @@ export default function Explorer({ win }: { win: Win }) {
             <List size={14} />
           </button>
         </div>
+        {mobile && (
+          <button className="nav-btn" aria-label="Sort" onClick={() => setSortSheet(true)}>
+            <SortDescending size={15} />
+          </button>
+        )}
       </div>
       <div className="exp-main">
         <div className="exp-tree">
@@ -199,17 +228,21 @@ export default function Explorer({ win }: { win: Win }) {
           {view === "icons" ? (
             <div className="icons-grid">
               {items.map((n) => (
-                <button
-                  key={n.id}
-                  className={"file-ico" + (sel === n.id ? " selected" : "")}
-                  onClick={() => setSel(n.id)}
-                  onDoubleClick={() => open(n)}
-                  onContextMenu={(e) => onItemContext(e, n)}
-                  data-file={n.id}
-                >
-                  {nodeIcon(n.kind, !!n.password && !state.unlocked.includes(n.id))}
-                  <span className="label">{n.name}</span>
-                </button>
+                <FileIcon key={n.id} n={n} sel={sel === n.id} mobile={mobile} locked={!!n.password && !state.unlocked.includes(n.id)}
+                  onTap={() => (mobile ? open(n) : setSel(n.id))}
+                  onOpen={() => open(n)}
+                  onCtx={(e) => onItemContext(e, n)}
+                  onLong={() => { setSel(n.id); setCtx({ x: 0, y: 0, node: n }); }}
+                />
+              ))}
+            </div>
+          ) : mobile ? (
+            <div className="m-rows">
+              {items.map((n) => (
+                <MobileRow key={n.id} n={n} sel={sel === n.id} locked={!!n.password && !state.unlocked.includes(n.id)}
+                  onTap={() => open(n)}
+                  onLong={() => { setSel(n.id); setCtx({ x: 0, y: 0, node: n }); }}
+                />
               ))}
             </div>
           ) : (
@@ -246,7 +279,20 @@ export default function Explorer({ win }: { win: Win }) {
         </div>
       </div>
       <div className="exp-status">{items.length} item{items.length === 1 ? "" : "s"}</div>
-      {ctx && (
+      {sortSheet && (
+        <ActionSheet
+          onClose={() => setSortSheet(false)}
+          items={[
+            ...(["name", "modified", "type"] as SortKey[]).map((k) => ({
+              label: `${({ name: "Name", modified: "Date modified", type: "Type" } as Record<SortKey, string>)[k]}${sort.key === k ? (sort.asc ? " (oldest first)" : " (newest first)") : ""}`,
+              onClick: () => clickSort(k),
+            })),
+            { label: sort.asc ? "Show newest first" : "Show oldest first", onClick: () => setSort((s) => ({ ...s, asc: !s.asc })) },
+          ]}
+        />
+      )}
+      {ctx && mobile && itemSheet(ctx.node)}
+      {ctx && !mobile && (
         <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }} onClick={(e) => e.stopPropagation()}>
           <button className="ctx-item" onClick={() => { setCtx(null); open(ctx.node); }}>Open</button>
           <div className="ctx-sep" />
@@ -263,6 +309,43 @@ export default function Explorer({ win }: { win: Win }) {
         </div>
       )}
     </div>
+  );
+}
+
+// a file row/icon that opens on tap (mobile) or double-click (desktop)
+function FileIcon({ n, sel, locked, mobile, onTap, onOpen, onCtx, onLong }: {
+  n: FSNode; sel: boolean; locked: boolean; mobile: boolean;
+  onTap: () => void; onOpen: () => void; onCtx: (e: React.MouseEvent) => void; onLong: () => void;
+}) {
+  const lp = useLongPress(onLong);
+  return (
+    <button
+      className={"file-ico" + (sel ? " selected" : "")}
+      onClick={onTap}
+      onDoubleClick={() => !mobile && onOpen()}
+      onContextMenu={onCtx}
+      data-file={n.id}
+      {...(mobile ? lp : {})}
+    >
+      {nodeIcon(n.kind, locked)}
+      <span className="label">{n.name}</span>
+    </button>
+  );
+}
+
+// mobile details view: two-line rows, no horizontal scroll
+function MobileRow({ n, sel, locked, onTap, onLong }: {
+  n: FSNode; sel: boolean; locked: boolean; onTap: () => void; onLong: () => void;
+}) {
+  const lp = useLongPress(onLong);
+  return (
+    <button className={"mrow" + (sel ? " sel" : "")} data-file={n.id} onClick={onTap} {...lp}>
+      <span className="mr-ic">{nodeIcon(n.kind, locked, 18)}</span>
+      <span className="mr-txt">
+        <span className="mr-name">{n.name}</span>
+        <span className="mr-meta">{fmtDate(n.modified)} · {typeName(n)}{n.kind === "folder" ? "" : ` · ${formatSize(n.size ?? 0)}`}</span>
+      </span>
+    </button>
   );
 }
 

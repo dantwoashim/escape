@@ -3,6 +3,7 @@ import { useMeta, useActions, Win, checkPassword } from "../game/state";
 import { levelContent } from "../game/levels";
 import { DocBlock, ParaBlock, Run, findNode } from "../game/content";
 import { replaceAllCount } from "../game/logic";
+import { useIsMobile } from "../game/useIsMobile";
 import {
   TextB, MagnifyingGlass, ArrowCounterClockwise, Minus, Plus, SelectionAll,
 } from "@phosphor-icons/react";
@@ -41,6 +42,7 @@ export default function Word({ win }: Props) {
   const pagesRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const active = state.activeWin === win.id;
+  const mobile = useIsMobile();
 
   // font-size field shows first selected run's size, else the document's first
   const firstSize = useMemo(() => {
@@ -264,6 +266,17 @@ export default function Word({ win }: Props) {
         <button className={"wbtn" + (replaceOpen ? " on" : "")} onClick={() => { setReplaceOpen(!replaceOpen); setFindOpen(false); }}>
           <ArrowCounterClockwise size={14} /> Replace
         </button>
+        {mobile && (
+          <>
+            <span className="wsep" />
+            <button className="wbtn" title="Zoom out" onClick={() => { setZoom((z) => Math.max(10, z - 25)); dispatch({ type: "skill", k: "zoom" }); }}>
+              Zoom -
+            </button>
+            <button className="wbtn" title="Zoom in" onClick={() => { setZoom((z) => Math.min(500, z + 25)); dispatch({ type: "skill", k: "zoom" }); }}>
+              Zoom +
+            </button>
+          </>
+        )}
       </div>
 
       {(findOpen || replaceOpen) && (
@@ -381,6 +394,11 @@ function PasswordGate({ win, nodeName }: { win: Win; nodeName: string }) {
           type="text"
           value={val}
           aria-label="Password"
+          inputMode={node?.password && /^\d+$/.test(node.password) ? "numeric" : undefined}
+          autoComplete="off"
+          spellCheck={false}
+          autoCapitalize="off"
+          data-lpignore="true"
           onChange={(e) => { setVal(e.target.value); setErr(false); }}
           onKeyDown={(e) => e.key === "Enter" && submit()}
         />

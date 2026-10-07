@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, Page, devices } from "@playwright/test";
 import * as path from "path";
 import * as fs from "fs";
 
@@ -114,4 +114,24 @@ test("docs screenshots: explorer details + finale after full playthrough", async
   const EVID = path.resolve("evidence");
   fs.mkdirSync(EVID, { recursive: true });
   await page.screenshot({ path: path.join(EVID, "finale-challenges-1920.png"), animations: "disabled" });
+});
+
+test("docs screenshots: mobile landing + desktop + finale", async ({ browser }) => {
+  const ctx = await browser.newContext({ ...devices["Pixel 5"] });
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await shot(page, "mobile-landing");
+  await page.fill("#team", "Team Peepal");
+  await page.getByText("Start the hunt").tap();
+  const coach = page.locator(".coach");
+  if (await coach.count()) await coach.locator(".skip").tap();
+  await shot(page, "mobile-desktop");
+  await page.locator('[data-desk="box-root"]').tap();
+  await page.locator('[data-file="chautari"]').tap();
+  await page.locator('.view-switch button[title="Details"]').tap();
+  await page.locator('.nav-btn[aria-label="Sort"]').tap();
+  await shot(page, "mobile-sort-sheet");
+  await page.locator('.action-sheet .sheet-item', { hasText: "Date modified" }).tap();
+  await shot(page, "mobile-explorer");
+  await ctx.close();
 });
