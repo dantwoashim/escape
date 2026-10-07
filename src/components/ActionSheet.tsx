@@ -1,5 +1,7 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
+import { useIsMobile } from "../game/useIsMobile";
+import { navPush, navConsume } from "../game/historyNav";
 
 export interface SheetItem {
   label: string;
@@ -9,10 +11,23 @@ export interface SheetItem {
 
 // bottom action sheet, the mobile version of a right-click menu
 export default function ActionSheet({ items, onClose }: { items: SheetItem[]; onClose: () => void }) {
+  const mobile = useIsMobile();
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  // a pushed depth on mobile: Back closes the sheet; any direct dismissal
+  // consumes that entry first so the stack stays honest
+  useEffect(() => {
+    if (!mobile) return;
+    navPush(() => closeRef.current());
+  }, [mobile]);
+  const close = () => {
+    if (mobile) navConsume();
+    onClose();
+  };
   // the sheet opens under a held finger; lifting it must not count as a backdrop tap
   const born = useRef(performance.now());
   const closeIfSettled = () => {
-    if (performance.now() - born.current > 350) onClose();
+    if (performance.now() - born.current > 350) close();
   };
   return (
     <div
@@ -31,7 +46,7 @@ export default function ActionSheet({ items, onClose }: { items: SheetItem[]; on
             className="sheet-item"
             role="menuitem"
             onClick={() => {
-              onClose();
+              close();
               it.onClick();
             }}
           >
@@ -39,7 +54,7 @@ export default function ActionSheet({ items, onClose }: { items: SheetItem[]; on
             {it.label}
           </button>
         ))}
-        <button className="sheet-item cancel" onClick={onClose}>Cancel</button>
+        <button className="sheet-item cancel" onClick={close}>Cancel</button>
       </div>
     </div>
   );

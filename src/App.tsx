@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { GameProvider, useMeta, useWindows, useActions } from "./game/state";
 import { useIsMobile } from "./game/useIsMobile";
+import { installNav, navSetEnabled } from "./game/historyNav";
 import Landing from "./components/Landing";
 import Desktop from "./components/Desktop";
 import Taskbar from "./components/Taskbar";
@@ -21,6 +22,25 @@ function Shell() {
     const stop = (e: Event) => e.preventDefault();
     document.addEventListener("contextmenu", stop);
     return () => document.removeEventListener("contextmenu", stop);
+  }, [mobile]);
+
+  // mobile only: hardware Back / edge-swipe steps through the game shell
+  useEffect(() => {
+    installNav();
+    navSetEnabled(mobile && state.phase === "game");
+  }, [mobile, state.phase]);
+
+  // keep the focused field above the on-screen keyboard
+  useEffect(() => {
+    if (!mobile || !window.visualViewport) return;
+    const onResize = () => {
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+        el.scrollIntoView({ block: "center", behavior: "auto" });
+      }
+    };
+    window.visualViewport.addEventListener("resize", onResize);
+    return () => window.visualViewport?.removeEventListener("resize", onResize);
   }, [mobile]);
 
   // teacher panel: #teacher hash or Ctrl+Alt+H

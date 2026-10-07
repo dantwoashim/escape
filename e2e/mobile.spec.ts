@@ -108,6 +108,35 @@ test("level 1 full playthrough on a phone", async ({ page }) => {
   await page.locator(".finale").waitFor({ state: "visible" });
 });
 
+test("browser back steps through the shell and never leaves", async ({ page }) => {
+  await page.goto("/");
+  await page.fill("#team", "M");
+  await page.getByText("Start the hunt").tap();
+  await skipCoach(page);
+  const url = page.url();
+
+  await tap(page, '[data-desk="box-root"]');                       // explorer opens
+  await tap(page, '.window:visible [data-file="chautari"]');       // into the folder
+  await tap(page, '.window:visible [data-file="leaf-17"]');        // the leaf doc opens
+  await expect(page.locator(".window:visible .word")).toBeVisible();
+
+  await page.goBack(); // leaf closes, explorer still in Chautari
+  await expect(page.locator(".window:visible .explorer")).toBeVisible();
+  await expect(page.locator('.window:visible [data-file="leaf-17"]')).toBeVisible();
+
+  await page.goBack(); // up one folder, back at the box root
+  await expect(page.locator('.window:visible [data-file="start-here"]')).toBeVisible();
+
+  await page.goBack(); // explorer closes, desktop again
+  await expect(page.locator(".m-appbar:visible")).toHaveCount(0);
+  await expect(page.locator('[data-desk="box-root"]:visible')).toBeVisible();
+
+  await page.goBack(); // trapped at the desktop, never leaves the page
+  await expect(page.locator('[data-desk="box-root"]:visible')).toBeVisible();
+  await expect(page.locator(".m-appbar:visible")).toHaveCount(0);
+  expect(page.url()).toBe(url);
+});
+
 test("calculator fits a phone", async ({ page }) => {
   await page.goto("/");
   await page.fill("#team", "T");

@@ -15,6 +15,7 @@ import {
 } from "./content";
 import { levelContent } from "./levels";
 import { nextMilestone, pathIsTrap, idsTo, restoreNode } from "./logic";
+import { navEnabled, navPush } from "./historyNav";
 
 export const SAVE_KEY = "hajurama-box-save-v2";
 export const SEEN_KEY = "hajurama-box-seen-v1";
@@ -237,7 +238,8 @@ export type Action =
   | { type: "play-again" }
   | { type: "teacher"; on: boolean }
   | { type: "teacher-token" }
-  | { type: "teacher-reset" };
+  | { type: "teacher-reset" }
+  | { type: "back" };
 
 let winSeq = 1;
 
@@ -432,6 +434,25 @@ export function reducer(state: State, a: Action): State {
         ...state, zTop, activeWin: a.id,
         windows: state.windows.map((x) => (x.id === a.id ? { ...x, z: zTop, minimized: false } : x)),
       };
+    }
+    // one step back in the mobile shell: up a folder, or close the top window
+    case "back": {
+      const top =
+        (state.activeWin != null &&
+          state.windows.find((w) => w.id === state.activeWin && !w.minimized)) ||
+        [...state.windows].filter((w) => !w.minimized).sort((x, y) => y.z - x.z)[0];
+      if (!top) return state;
+      if (top.app === "explorer" && top.path.length > 1) {
+        return {
+          ...state,
+          windows: state.windows.map((w) =>
+            w.id === top.id ? { ...w, path: w.path.slice(0, -1) } : w,
+          ),
+        };
+      }
+      const wins = state.windows.filter((w) => w.id !== top.id);
+      const nt = [...wins].sort((x, y) => y.z - x.z)[0];
+      return { ...state, windows: wins, activeWin: nt && !nt.minimized ? nt.id : null };
     }
     case "close": {
       const wins = state.windows.filter((w) => w.id !== a.id);
@@ -677,20 +698,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [state.toast]);
 
-  const act = useMemo<ActCtx>(() => ({
-    dispatch,
-    openNode: (n) => {
-      if (n.id === "recycle-bin") {
-        dispatch({ type: "open-app", app: "recycle", title: "Recycle Bin", nodeId: n.id, path: ["recycle-bin"] });
-        return;
+  const act = useMemo<ActCtx>(() => {
+    // the mobile shell tracks UI depth in history so Back never leaves the page
+    const wrapped: Dispatch<Action> = (a) => {
+      if (navEnabled()) {
+        if (a.type === "open-node" || a.type === "open-app" || a.type === "open-explorer") {
+          navPush(() => dispatch({ type: "back" }));
+        } else if (a.type === "navigate") {
+          const w = stateRef.current.windows.find((x) => x.id === a.winId);
+          if (a.path.length > (w?.path.length ?? 0)) navPush(() => dispatch({ type: "back" }));
+        }
       }
-      if (n.app === "calculator") {
-        dispatch({ type: "open-app", app: "calculator", title: "Calculator", nodeId: n.id });
-        return;
-      }
-      dispatch({ type: "open-node", nodeId: n.id });
-    },
-  }), []);
+      dispatch(a);
+    };
+    return {
+      dispatch: wrapped,
+      openNode: (n) => {
+        if (n.id === "recycle-bin") {
+          wrapped({ type: "open-app", app: "recycle", title: "Recycle Bin", nodeId: n.id, path: ["recycle-bin"] });
+          return;
+        }
+        if (n.app === "calculator") {
+          wrapped({ type: "open-app", app: "calculator", title: "Calculator", nodeId: n.id });
+          return;
+        }
+        wrapped({ type: "open-node", nodeId: n.id });
+      },
+    };
+  }, []);
 
   const meta = useMemo<MetaState>(() => {
     const { windows: _w, zTop: _z, ...rest } = state;

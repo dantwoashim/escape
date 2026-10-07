@@ -611,6 +611,15 @@ body { overscroll-behavior: none; }
 
 html.mobile .grain { display: none; }
 
+/* native type scale: system font for chrome, document font inside pages */
+html.mobile { --font-ui: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+html.mobile .page { font-family: "Geist", system-ui, sans-serif; }
+
+/* long-press must not trigger text selection on chrome; document text stays selectable */
+html.mobile .window, html.mobile .taskbar, html.mobile .desktop, html.mobile .action-sheet,
+html.mobile .landing { user-select: none; }
+html.mobile .page, html.mobile .page * { user-select: text; }
+
 /* landing stacks, buttons get big enough to tap */
 html.mobile .landing {
   grid-template-columns: 1fr; align-content: start; gap: 18px;
@@ -643,8 +652,8 @@ html.mobile .window {
   width: auto; height: auto; border-radius: 0; border: none; box-shadow: none;
 }
 html.mobile .m-appbar {
-  height: 52px; flex: none; display: flex; align-items: center; gap: 6px;
-  padding: 0 8px; border-bottom: 1px solid var(--line); background: var(--surface);
+  height: calc(52px + env(safe-area-inset-top)); flex: none; display: flex; align-items: center; gap: 6px;
+  padding: env(safe-area-inset-top) 8px 0; border-bottom: 1px solid var(--line); background: var(--surface);
 }
 html.mobile .m-back, html.mobile .m-more {
   width: 44px; height: 44px; border: none; border-radius: 8px; background: none;
@@ -652,7 +661,7 @@ html.mobile .m-back, html.mobile .m-more {
 }
 html.mobile .m-back:active, html.mobile .m-more:active { background: var(--surface-2); }
 html.mobile .m-title {
-  flex: 1; text-align: center; font-size: 15px; font-weight: 600;
+  flex: 1; text-align: center; font-size: 17px; font-weight: 600;
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 html.mobile .m-more-spacer { width: 44px; flex: none; }
@@ -668,8 +677,8 @@ html.mobile .m-home {
   width: 44px; height: 44px; flex: none; border: none; border-radius: 50%;
   background: var(--ink); color: var(--surface); display: grid; place-items: center;
 }
-html.mobile .task-win { min-width: 44px; max-width: 120px; height: 40px; font-size: 12px; }
-html.mobile .hud { gap: 8px; font-size: 12px; }
+html.mobile .task-win { min-width: 44px; max-width: 120px; height: 44px; font-size: 13px; }
+html.mobile .hud { gap: 8px; font-size: 13px; }
 html.mobile .hint-btn { height: 40px; padding: 0 12px; }
 
 /* explorer: no tree, big tap targets, two-line detail rows */
@@ -687,7 +696,7 @@ html.mobile .m-rows { padding: 8px; display: flex; flex-direction: column; }
 html.mobile .mrow {
   display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px;
   padding: 6px 10px; border: none; border-bottom: 1px solid var(--line);
-  background: none; text-align: left; font-size: 14px;
+  background: none; text-align: left; font-size: 15px;
   content-visibility: auto; contain-intrinsic-size: 52px;
 }
 html.mobile .mrow.sel { background: var(--accent-soft); }
@@ -698,17 +707,25 @@ html.mobile .mr-txt { min-width: 0; display: flex; flex-direction: column; gap: 
 html.mobile .mr-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 html.mobile .mr-meta { font-size: 11.5px; color: var(--ink-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-/* word on mobile: chunky toolbar, 16px inputs so iOS does not zoom */
-html.mobile .word-toolbar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
-html.mobile .wbtn { min-height: 40px; padding: 6px 12px; font-size: 13.5px; }
-html.mobile .swatch { width: 34px; height: 34px; }
-html.mobile .size-field { font-size: 16px; height: 40px; }
-html.mobile .fr-dialog { left: 8px; right: 8px; }
+/* word on mobile: fixed-height toolbar (scrolls sideways, never wraps),
+   16px inputs so iOS does not zoom */
+html.mobile .word-toolbar { flex-wrap: nowrap; overflow-x: auto; gap: 4px; padding: 6px 8px; scrollbar-width: none; }
+html.mobile .wbtn { min-height: 44px; min-width: 44px; padding: 6px 12px; font-size: 13.5px; flex: none; }
+html.mobile .swatch { width: 44px; height: 44px; flex: none; }
+html.mobile .size-field { font-size: 16px; height: 44px; }
+html.mobile .fr-dialog { left: 8px; right: 8px; width: auto; font-size: 15px; }
 html.mobile .fr-dialog input { font-size: 16px; min-height: 44px; }
+html.mobile .pw-dialog { font-size: 15px; max-width: calc(100vw - 40px); }
 html.mobile .pw-dialog input { font-size: 16px; min-height: 48px; }
 html.mobile .word .page { width: auto; margin: 10px; min-height: 40vh; }
+html.mobile .page p { line-height: 1.5; }
+html.mobile .field-row { flex-direction: column; align-items: center; gap: 10px; }
+html.mobile .properties, html.mobile .ctx-menu, html.mobile .action-sheet { font-size: 15px; }
 html.mobile .word-status { padding: 6px 10px; }
 html.mobile .zoom-slider { display: none; }
+html.mobile .word-ask { width: 100%; }
+html.mobile .word-input { flex: 1; min-width: 0; font-size: 16px; min-height: 44px; }
+html.mobile .word-check { width: auto; }
 
 /* calculator fits 360px, keys are thumb-sized */
 html.mobile .calc { padding: 10px; }
@@ -736,7 +753,7 @@ html.mobile .dg-el { touch-action: none; }
 }
 @keyframes sheetup { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .sheet-item {
-  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px;
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px;
   padding: 0 14px; border: none; border-radius: 8px; background: none;
   font-size: 16px; text-align: left; cursor: pointer;
 }

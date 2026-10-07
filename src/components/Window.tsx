@@ -6,6 +6,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useMeta, useActions, Win } from "../game/state";
 import { findNode } from "../game/content";
 import { useIsMobile } from "../game/useIsMobile";
+import { navBack } from "../game/historyNav";
 import { CaretLeft, DotsThree, Minus, Square, X } from "@phosphor-icons/react";
 import Explorer, { Properties } from "./Explorer";
 import Word from "./Word";
@@ -94,12 +95,9 @@ const Frame = memo(function Frame({ win, active }: Props) {
   // Properties only makes sense for real files/folders, not apps or the dialog itself
   const showProps = !!node && node.kind !== "app" && win.app !== "properties";
 
+  // one code path for the arrow, the hardware back, and edge-swipe
   const onMobileBack = () => {
-    if (win.app === "explorer" && win.path.length > 1) {
-      dispatch({ type: "navigate", winId: win.id, path: win.path.slice(0, -1) });
-    } else {
-      dispatch({ type: "close", id: win.id });
-    }
+    navBack(() => dispatch({ type: "back" }));
   };
 
   const style: CSSProperties = mobile

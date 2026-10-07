@@ -44,6 +44,16 @@ export default function Word({ win }: Props) {
   const active = state.activeWin === win.id;
   const mobile = useIsMobile();
 
+  // the doc paints only after the webfonts resolve, so opening a document
+  // never reflows mid-swap (this was the "text jumps when the letter opens" bug)
+  const [fontsReady, setFontsReady] = useState(false);
+  useEffect(() => {
+    let on = true;
+    if (document.fonts.status === "loaded") { setFontsReady(true); return; }
+    document.fonts.ready.then(() => { if (on) setFontsReady(true); });
+    return () => { on = false; };
+  }, []);
+
   // font-size field shows first selected run's size, else the document's first
   const firstSize = useMemo(() => {
     for (const b of blocks) if (b.type === "para" && b.runs[0]) return b.runs[0].size;
@@ -207,7 +217,7 @@ export default function Word({ win }: Props) {
         style={scam && !scamRevealed ? { opacity: 0.25 } : undefined}
       >
         {p.runs.map((r, ri) => (
-          <RunSpan key={ri} run={r} runKey={`${myBi}:${ri}`} findQ={findOpen || replaceOpen ? findQ : ""} />
+          <RunSpan key={ri} run={r} runKey={`${myBi}:${ri}`} findQ={findOpen || replaceOpen ? findQ : ""} mobile={mobile} />
         ))}
       </p>
     );
@@ -312,7 +322,7 @@ export default function Word({ win }: Props) {
           <PasswordGate win={win} nodeName={node?.name ?? ""} />
         ) : (
           <div ref={pagesRef}>
-            {pages.map((pg, i) => (
+            {(fontsReady ? pages : [[]]).map((pg, i) => (
               <div className="page" key={i} data-page={i} style={{ zoom: zoom / 100 }}>
                 {pg.map(({ b, idx }) => renderBlock(b, idx, i))}
               </div>
@@ -337,9 +347,13 @@ export default function Word({ win }: Props) {
   function setSize(v: number) { applyToRuns((r) => ({ ...r, size: v })); dispatch({ type: "skill", k: "fontSize" }); }
 }
 
-function RunSpan({ run, runKey, findQ }: { run: Run; runKey: string; findQ: string }) {
+function RunSpan({ run, runKey, findQ, mobile }: { run: Run; runKey: string; findQ: string; mobile: boolean }) {
+  // mobile uses a native-feeling two-band scale: body 16px, display 20px.
+  // genuinely tiny runs (the hidden-font clue) must stay tiny.
+  const size =
+    mobile && run.size > 8 ? (run.size > 20 ? "20px" : "16px") : `${run.size}pt`;
   const style: React.CSSProperties = {
-    fontSize: `${run.size}pt`,
+    fontSize: size,
     color: run.color,
     fontFamily: run.font ? FONT_VAR[run.font] : undefined,
     fontWeight: run.bold ? 700 : undefined,
