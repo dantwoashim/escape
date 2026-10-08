@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMeta, useActions, elapsed } from "../game/state";
 import { fmtTime } from "../game/logic";
 import { bonusHint, checkWord, setBonusHint } from "../game/bonus";
+import { useIsMobile } from "../game/useIsMobile";
 import { ArrowRight } from "@phosphor-icons/react";
 import { LEVELS } from "../game/levels";
 import { loadRuns } from "../game/runs";
@@ -96,6 +97,7 @@ function WordGate() {
 
 export default function Landing() {
   const state = useMeta();
+  const mobile = useIsMobile();
   const { dispatch } = useActions();
   const [team, setTeam] = useState(state.team || "");
   // preselect Level 2 once a Level 1 run exists on this computer
@@ -151,8 +153,12 @@ export default function Landing() {
               </button>
             )}
           </div>
-          <div className="meta-line">About 10 minutes · 2 or 3 players · play it on a computer</div>
           <WordGate />
+          <div className="meta-line">
+            {mobile
+              ? "About 10 minutes · 2 or 3 players · play it on your phone"
+              : "About 10 minutes · 2 or 3 players · play it on a computer"}
+          </div>
         </div>
         <div className="landing-art"><BoxArt /></div>
       </div>

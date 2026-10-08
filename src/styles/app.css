@@ -621,15 +621,16 @@ html.mobile .window, html.mobile .taskbar, html.mobile .desktop, html.mobile .ac
 html.mobile .landing { user-select: none; }
 html.mobile .page, html.mobile .page * { user-select: text; }
 
-/* landing stacks, buttons get big enough to tap */
+/* landing stacks, buttons get big enough to tap; the whole page scrolls
+   (body overflow is hidden, so the landing itself must own the scroll) */
 html.mobile .landing {
-  grid-template-columns: 1fr; align-content: start; gap: 18px;
-  padding: 5vh 6vw 24px; overflow-y: auto;
+  grid-template-columns: 1fr; align-content: start; gap: 14px;
+  padding: 3vh 6vw 24px; height: 100dvh; min-height: 0; overflow-y: auto;
 }
-html.mobile .landing h1 { font-size: 38px; }
-html.mobile .landing p.desc { font-size: 16px; margin-bottom: 22px; }
+html.mobile .landing h1 { font-size: 34px; }
+html.mobile .landing p.desc { font-size: 16px; margin-bottom: 16px; }
 html.mobile .landing-art { order: -1; }
-html.mobile .landing-art svg { width: min(56vw, 240px); }
+html.mobile .landing-art svg { width: min(44vw, 180px); }
 html.mobile .field input { width: 100%; font-size: 16px; min-height: 48px; }
 html.mobile .level-pick { flex-direction: column; }
 html.mobile .level-card { min-height: 52px; }
@@ -724,6 +725,12 @@ html.mobile .field-row { flex-direction: column; align-items: center; gap: 10px;
 html.mobile .properties, html.mobile .ctx-menu, html.mobile .action-sheet { font-size: 15px; }
 html.mobile .word-status { padding: 6px 10px; }
 html.mobile .zoom-slider { display: none; }
+html.mobile .word-link {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px;
+  margin-top: 8px; font-size: 15px; text-decoration: none; color: var(--ink);
+  border: 1px solid var(--line-2); border-radius: var(--radius-ctl); background: var(--surface);
+}
+html.mobile .word-done { font-size: 15px; margin-top: 12px; }
 html.mobile .word-ask { width: 100%; }
 html.mobile .word-input { flex: 1; min-width: 0; font-size: 16px; min-height: 44px; }
 html.mobile .word-check { width: auto; }
